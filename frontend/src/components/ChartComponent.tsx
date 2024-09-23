@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
+import './ChartComponent.css';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -83,6 +84,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({ stockSymbol, startDate,
 
     const chartOptions = {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
             x: {
                 display: true,
@@ -108,7 +110,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({ stockSymbol, startDate,
     console.log('Chart data to be rendered:', chartData);
 
     return chartData ? (
-        <div>
+        <div className="chart-container">
             <Line data={chartData} options={chartOptions} />
         </div>
     ) : (

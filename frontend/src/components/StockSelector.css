@@ -1,0 +1,26 @@
+.stock-selector-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px; /* Space below the form */
+}
+
+    .stock-selector-form > div {
+        margin-bottom: 10px;
+    }
+
+    .stock-selector-form label {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .stock-selector-form input,
+    .stock-selector-form button,
+    .stock-selector-form .react-datepicker-wrapper {
+        width: 200px; /* Adjust as needed */
+    }
+
+    .stock-selector-form button {
+        margin-top: 10px;
+    }

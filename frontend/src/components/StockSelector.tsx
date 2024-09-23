@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import './StockSelector.css';
 
 interface StockSelectorProps {
     onSelectStock: (stockSymbol: string, startDate?: Date, endDate?: Date) => void;
@@ -17,7 +18,7 @@ const StockSelector: React.FC<StockSelectorProps> = ({ onSelectStock }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="stock-selector-form">
             <div>
                 <label>
                     Stock Symbol:
