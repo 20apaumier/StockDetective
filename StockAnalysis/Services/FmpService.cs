@@ -15,13 +15,44 @@ namespace StockAnalysis.Services
             _httpClient.BaseAddress = new Uri(_apiSettings.BaseUrl);
         }
 
-        public async Task<List<StockData>> GetHistoricalPricesAsync(string symbol)
+        public async Task<List<StockData>> GetHistoricalPricesAsync(string symbol, string from = null, string to = null)
         {
-            // add from value later;
-            var endpoint = $"/historical-price-full/{symbol}?apikey={_apiSettings.ApiKey}";
-            var fullUrl = _httpClient.BaseAddress + endpoint;
-            var response = await _httpClient.GetFromJsonAsync<FmpHistoricalDataResponse>(fullUrl);
-            return response?.Historical;
+            try
+            {
+                var endpoint = $"historical-price-full/{symbol}";
+
+                var queryParams = new List<string>();
+                if (!string.IsNullOrEmpty(from))
+                {
+                    queryParams.Add($"from={from}");
+                }
+                if (!string.IsNullOrEmpty(to))
+                {
+                    queryParams.Add($"to={to}");
+                }
+                queryParams.Add($"apikey={_apiSettings.ApiKey}");
+
+                var url = $"{_httpClient.BaseAddress}/{endpoint}?{string.Join("&", queryParams)}";
+
+                Console.WriteLine(url);
+
+                var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {response.StatusCode}, Content: {errorContent}");
+                    return null;
+                }
+
+                var data = await response.Content.ReadFromJsonAsync<FmpHistoricalDataResponse>();
+                return data?.Historical;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception in GetHistoricalPricesAsync: {ex.Message}");
+                return null;
+            }
         }
 
         public async Task<List<IndicatorData>> GetIndicatorAsync(string symbol, string indicator)
