@@ -1,0 +1,10 @@
+.chart-container {
+    width: 80%; /* Adjust as needed */
+    max-width: 1000px; /* Max width */
+    height: 500px; /* Adjust height as needed */
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
