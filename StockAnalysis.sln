@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35312.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockAnalysis", "StockAnalysis\StockAnalysis.csproj", "{0C538D4A-0F68-4F92-8D96-8E05098DB59F}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "frontend", "frontend\frontend.esproj", "{2FEE0FB5-5987-4996-81DE-D52C632BACE5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0C538D4A-0F68-4F92-8D96-8E05098DB59F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C538D4A-0F68-4F92-8D96-8E05098DB59F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C538D4A-0F68-4F92-8D96-8E05098DB59F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C538D4A-0F68-4F92-8D96-8E05098DB59F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FEE0FB5-5987-4996-81DE-D52C632BACE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FEE0FB5-5987-4996-81DE-D52C632BACE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FEE0FB5-5987-4996-81DE-D52C632BACE5}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{2FEE0FB5-5987-4996-81DE-D52C632BACE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FEE0FB5-5987-4996-81DE-D52C632BACE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FEE0FB5-5987-4996-81DE-D52C632BACE5}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4A275145-39C8-4F99-91AC-947792A4ECD4}
+	EndGlobalSection
+EndGlobal
