@@ -17,9 +17,9 @@ namespace StockAnalysis.Controllers
         }
 
         [HttpGet("{symbol}")]
-        public async Task<IActionResult> GetStockData(string symbol)
+        public async Task<IActionResult> GetStockData(string symbol, [FromQuery] string from = null, [FromQuery] string to = null)
         {
-            var stockData = await _fmpService.GetHistoricalPricesAsync(symbol);
+            var stockData = await _fmpService.GetHistoricalPricesAsync(symbol, from, to);
             if (stockData == null || stockData.Count == 0)
             {
                 return NotFound(new { Message = $"Stock data for symbol '{symbol}' not found." });

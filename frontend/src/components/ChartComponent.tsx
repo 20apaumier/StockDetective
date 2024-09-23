@@ -25,20 +25,24 @@ ChartJS.register(
 
 interface ChartComponentProps {
     stockSymbol: string;
+    startDate?: Date;
+    endDate?: Date;
 }
 
-const ChartComponent: React.FC<ChartComponentProps> = ({ stockSymbol }) => {
+const ChartComponent: React.FC<ChartComponentProps> = ({ stockSymbol, startDate, endDate }) => {
     const [chartData, setChartData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (stockSymbol) {
-            console.log(`Fetching data for stock symbol: ${stockSymbol}`);
             setLoading(true);
+            const params: any = {};
+            if (startDate) params.from = startDate.toISOString().split('T')[0];
+            if (endDate) params.to = endDate.toISOString().split('T')[0];
+
             axios
-                .get(`https://localhost:7086/Stock/${stockSymbol}`)
+                .get(`https://localhost:7086/Stock/${stockSymbol}`, { params })
                 .then((response) => {
-                    console.log('Received data from API:', response.data);
                     const data = formatChartData(response.data);
                     setChartData(data);
                     setLoading(false);
@@ -49,7 +53,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({ stockSymbol }) => {
                     setLoading(false);
                 });
         }
-    }, [stockSymbol]);
+    }, [stockSymbol, startDate, endDate]);
 
     const formatChartData = (stockData: any[]) => {
         try {
