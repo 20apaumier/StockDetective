@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Skender.Stock.Indicators;
 using StockAnalysis.Models;
 
 namespace StockAnalysis.Services
