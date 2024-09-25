@@ -37,7 +37,7 @@ const StockSelector: React.FC<StockSelectorProps> = ({ onSelectStock }) => {
                     Start Date:
                     <DatePicker
                         selected={startDate}
-                        onChange={(date: Date) => setStartDate(date)}
+                        onChange={(date: Date | null) => setStartDate(date)}
                         maxDate={new Date()}
                         isClearable
                         placeholderText="Select a start date"
@@ -49,7 +49,7 @@ const StockSelector: React.FC<StockSelectorProps> = ({ onSelectStock }) => {
                     End Date:
                     <DatePicker
                         selected={endDate}
-                        onChange={(date: Date) => setEndDate(date)}
+                        onChange={(date: Date | null) => setEndDate(date)}
                         maxDate={new Date()}
                         isClearable
                         placeholderText="Select an end date"
