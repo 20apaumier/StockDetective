@@ -14,6 +14,7 @@ import {
     Legend,
 } from 'chart.js';
 
+// register chart components for ChartJS
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -24,10 +25,11 @@ ChartJS.register(
     Legend
 );
 
+// Define props for the ChartComponent
 interface ChartComponentProps {
-    stockSymbol: string;
-    startDate?: Date;
-    endDate?: Date;
+    stockSymbol: string; // stock symbol to fetch data for
+    startDate?: Date; // optional filter
+    endDate?: Date; // optional filter
 }
 
 const ChartComponent: React.FC<ChartComponentProps> = ({
@@ -35,103 +37,118 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     startDate,
     endDate,
 }) => {
-    const [rawData, setRawData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [rawData, setRawData] = useState<any[]>([]); // state to store fetched stock
+    const [loading, setLoading] = useState(false); // toggle loading state
 
-    // State variables for technical indicators
+    // State variables for toggling technical indicators
     const [showMacd, setShowMacd] = useState(false);
     const [showRsi, setShowRsi] = useState(false);
     const [showSma, setShowSma] = useState(false);
 
+    // fetch stock data when stockSymbol, startDate, or endDate changes
     useEffect(() => {
         if (stockSymbol) {
-            setLoading(true);
-            const params: any = {};
+            setLoading(true); // start loading
+            const params: any = {}; // parameters for api request
+
+            // format start/end date
             if (startDate) params.from = startDate.toISOString().split('T')[0];
             if (endDate) params.to = endDate.toISOString().split('T')[0];
 
+            // fetch stock data from api
             axios
                 .get(`https://localhost:7086/Stock/${stockSymbol}`, { params })
                 .then((response) => {
-                    setRawData(response.data);
-                    setLoading(false);
+                    setRawData(response.data); // set raw data from api response
+                    setLoading(false); // stop loading
                 })
                 .catch((error) => {
                     console.error('Error fetching data:', error);
                     alert(
                         `Failed to fetch data for symbol '${stockSymbol}'. Please try again.`
-                    );
-                    setLoading(false);
+                    ); // show error alert if the request fails
+                    setLoading(false); // stop loading
                 });
         }
-    }, [stockSymbol, startDate, endDate]);
+    }, [stockSymbol, startDate, endDate]); // trigger fetch if these change
 
-    // Compute chart data based on rawData and indicator toggles
+    // memoized calculation for chart data based on rawData and selected indicators
     const chartData = useMemo(() => {
+        // return null if no data
         if (!rawData || rawData.length === 0) return null;
+
+        // reverse data to show in proper chronological order
+        // potential fix here to make load faster (get order already in chronological order?)
         const reversedData = rawData.slice().reverse();
 
+        // extract dates and closing prices from raw data for line graph
+        // potential to change here for candle option
         const labels = reversedData.map((item) =>
             format(parseISO(item.date), 'MMM dd, yyyy')
         );
         const prices = reversedData.map((item) => item.close);
 
+        // datasets for the chart
+        // start with the stock price
         const datasets = [
             {
                 label: `${stockSymbol.toUpperCase()} Closing Price`,
                 data: prices,
-                borderColor: 'blue',
+                borderColor: 'purple',
                 fill: false,
                 yAxisID: 'y',
             },
         ];
 
+        // add MACD dataset if showMacd
         if (showMacd) {
             const macdData = reversedData.map((item) => item.macd ?? null);
             datasets.push({
                 label: 'MACD',
                 data: macdData,
-                borderColor: 'red',
+                borderColor: 'red', // red to be unique
                 fill: false,
                 yAxisID: 'y-axis-macd',
             });
         }
 
+        // add RSI dataset if showRsi
         if (showRsi) {
             const rsiData = reversedData.map((item) => item.rsi ?? null);
             datasets.push({
                 label: 'RSI',
                 data: rsiData,
-                borderColor: 'green',
+                borderColor: 'green', // greeb to be unique
                 fill: false,
                 yAxisID: 'y-axis-rsi',
             });
         }
 
+        // add SMA if showSma
         if (showSma) {
             const smaData = reversedData.map((item) => item.sma ?? null);
             datasets.push({
                 label: 'SMA',
                 data: smaData,
-                borderColor: 'purple',
+                borderColor: 'blue', // blue to be unique
                 fill: false,
                 yAxisID: 'y',
             });
         }
 
-        return { labels, datasets };
-    }, [rawData, showMacd, showRsi, showSma, stockSymbol]);
+        return { labels, datasets }; // chart data
+    }, [rawData, showMacd, showRsi, showSma, stockSymbol]); // recompute on relevant state changes
 
-    // Chart options with multiple y-axes
+    // Chart options
     const chartOptions = {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: false, // disable for flex sizing
         scales: {
             x: {
                 display: true,
                 title: {
                     display: true,
-                    text: 'Date',
+                    text: 'Date', // x-axis label
                     font: {
                         size: 16,
                     },
@@ -145,7 +162,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             y: {
                 type: 'linear',
                 display: true,
-                position: 'left',
+                position: 'left', // primary y-axis on the left (price)
                 title: {
                     display: true,
                     text: 'Price (USD)',
@@ -161,10 +178,10 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             },
             'y-axis-macd': {
                 type: 'linear',
-                display: showMacd,
-                position: 'right',
+                display: showMacd, // display only if macd
+                position: 'right', // on the right
                 grid: {
-                    drawOnChartArea: false,
+                    drawOnChartArea: false, // disable grid lines on macd axis
                 },
                 title: {
                     display: true,
@@ -181,7 +198,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             },
             'y-axis-rsi': {
                 type: 'linear',
-                display: showRsi,
+                display: showRsi, // display only if rsi is toggled
                 position: 'right',
                 grid: {
                     drawOnChartArea: false,
@@ -198,8 +215,8 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                         size: 14,
                     },
                 },
-                min: 0,
-                max: 100,
+                min: 0, // min val for rsi
+                max: 100, // max val for rsi
             },
         },
         plugins: {
@@ -210,9 +227,10 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     },
                 },
             },
+            // chart title
             title: {
                 display: true,
-                text: `${stockSymbol.toUpperCase()} Stock Chart`,
+                text: `${stockSymbol.toUpperCase()} Stock Chart`, 
                 font: {
                     size: 24,
                 },
@@ -220,6 +238,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         },
     };
 
+    // render the loading message if data is still being fetched
     if (loading) {
         return (
             <div className="chart-loading">
@@ -228,6 +247,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         );
     }
 
+    // render the chart component
     return chartData ? (
         <div className="chart-wrapper">
             {/* Checkboxes to toggle indicators */}
