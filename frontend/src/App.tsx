@@ -4,10 +4,11 @@ import ChartComponent from './components/ChartComponent';
 import './App.css';
 
 const App: React.FC = () => {
-    const [stockSymbol, setStockSymbol] = useState('');
-    const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-    const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+    const [stockSymbol, setStockSymbol] = useState(''); // store selected stock symbol
+    const [startDate, setStartDate] = useState<Date | undefined>(undefined); // optional start date
+    const [endDate, setEndDate] = useState<Date | undefined>(undefined); // optional end date
 
+    // update states
     const handleSelectStock = (symbol: string, start?: Date, end?: Date) => {
         setStockSymbol(symbol);
         setStartDate(start);

@@ -4,16 +4,19 @@ import 'react-datepicker/dist/react-datepicker.css';
 import './StockSelector.css';
 
 interface StockSelectorProps {
+    // callback function triggered when a stock is selected
     onSelectStock: (stockSymbol: string, startDate?: Date, endDate?: Date) => void;
 }
 
 const StockSelector: React.FC<StockSelectorProps> = ({ onSelectStock }) => {
-    const [stockSymbol, setStockSymbol] = useState('');
+    const [stockSymbol, setStockSymbol] = useState(''); // store stock symbol
     const [startDate, setStartDate] = useState<Date | null>(null); // Start date
     const [endDate, setEndDate] = useState<Date | null>(null); // End date
 
+    // handle form submission
     const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+        e.preventDefault(); // prevent reload
+        // call the function passed into props and making the stock full uppercase
         onSelectStock(stockSymbol.toUpperCase(), startDate || undefined, endDate || undefined);
     };
 
