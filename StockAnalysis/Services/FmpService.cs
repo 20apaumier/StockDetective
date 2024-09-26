@@ -12,8 +12,22 @@ namespace StockAnalysis.Services
         // constructor to inject dependencies
         public FmpService(IHttpClientFactory httpClientFactory, IOptions<FmpApiSettings> options)
         {
+            if (httpClientFactory == null)
+                throw new ArgumentNullException(nameof(httpClientFactory));
+
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            if (options.Value == null)
+                throw new ArgumentException("options.Value cannot be null", nameof(options));
+
             _apiSettings = options.Value; // access API settings
-            _httpClient = httpClientFactory.CreateClient(); // new HTTPClient Instance
+
+            _httpClient = httpClientFactory.CreateClient(); // create HttpClient instance
+
+            if (_httpClient == null)
+                throw new InvalidOperationException("The IHttpClientFactory returned null.");
+
             _httpClient.BaseAddress = new Uri(_apiSettings.BaseUrl); // set base address
         }
 

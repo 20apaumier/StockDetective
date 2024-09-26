@@ -1,0 +1,66 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`IndicatorSelector Component matches snapshot 1`] = `
+<DocumentFragment>
+  <div>
+    <h3>
+      Select Technical Indicators:
+    </h3>
+    <label>
+      <input
+        checked=""
+        type="checkbox"
+        value="RSI"
+      />
+      RSI 
+    </label>
+    <label>
+      <input
+        type="checkbox"
+        value="MACD"
+      />
+      MACD 
+    </label>
+    <label>
+      <input
+        checked=""
+        type="checkbox"
+        value="Moving Average"
+      />
+      Moving Average 
+    </label>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`IndicatorSelector Component matches snapshot with some indicators selected 1`] = `
+<DocumentFragment>
+  <div>
+    <h3>
+      Select Technical Indicators:
+    </h3>
+    <label>
+      <input
+        checked=""
+        type="checkbox"
+        value="RSI"
+      />
+      RSI 
+    </label>
+    <label>
+      <input
+        type="checkbox"
+        value="MACD"
+      />
+      MACD 
+    </label>
+    <label>
+      <input
+        type="checkbox"
+        value="Moving Average"
+      />
+      Moving Average 
+    </label>
+  </div>
+</DocumentFragment>
+`;

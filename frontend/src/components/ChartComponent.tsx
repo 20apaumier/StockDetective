@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
 import './ChartComponent.css';
@@ -9,10 +8,12 @@ import {
     LinearScale,
     PointElement,
     LineElement,
-    Title,
+    Title as ChartTitle,
     Tooltip,
     Legend,
+    ChartOptions,
 } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 
 // register chart components for ChartJS
 ChartJS.register(
@@ -20,7 +21,7 @@ ChartJS.register(
     LinearScale,
     PointElement,
     LineElement,
-    Title,
+    ChartTitle,
     Tooltip,
     Legend
 );
@@ -140,15 +141,15 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     }, [rawData, showMacd, showRsi, showSma, stockSymbol]); // recompute on relevant state changes
 
     // Chart options
-    const chartOptions = {
+    const chartOptions: ChartOptions<'line'> = {
         responsive: true,
-        maintainAspectRatio: false, // disable for flex sizing
+        maintainAspectRatio: false,
         scales: {
             x: {
                 display: true,
                 title: {
                     display: true,
-                    text: 'Date', // x-axis label
+                    text: 'Date',
                     font: {
                         size: 16,
                     },
@@ -160,9 +161,9 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 },
             },
             y: {
-                type: 'linear',
+                type: 'linear' as const,
                 display: true,
-                position: 'left', // primary y-axis on the left (price)
+                position: 'left',
                 title: {
                     display: true,
                     text: 'Price (USD)',
@@ -177,11 +178,11 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 },
             },
             'y-axis-macd': {
-                type: 'linear',
-                display: showMacd, // display only if macd
-                position: 'right', // on the right
+                type: 'linear' as const,
+                display: showMacd,
+                position: 'right',
                 grid: {
-                    drawOnChartArea: false, // disable grid lines on macd axis
+                    drawOnChartArea: false,
                 },
                 title: {
                     display: true,
@@ -197,8 +198,8 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 },
             },
             'y-axis-rsi': {
-                type: 'linear',
-                display: showRsi, // display only if rsi is toggled
+                type: 'linear' as const,
+                display: showRsi,
                 position: 'right',
                 grid: {
                     drawOnChartArea: false,
@@ -215,8 +216,8 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                         size: 14,
                     },
                 },
-                min: 0, // min val for rsi
-                max: 100, // max val for rsi
+                min: 0,
+                max: 100,
             },
         },
         plugins: {
@@ -227,10 +228,9 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     },
                 },
             },
-            // chart title
             title: {
                 display: true,
-                text: `${stockSymbol.toUpperCase()} Stock Chart`, 
+                text: `${stockSymbol.toUpperCase()} Stock Chart`,
                 font: {
                     size: 24,
                 },

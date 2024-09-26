@@ -17,7 +17,8 @@
     "moduleResolution": "Node",
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "types": [ "jest", "@testing-library/jest-dom" ] // Added or updated
+    "types": [ "jest", "@testing-library/jest-dom", "node" ] // Added or updated
   },
-  "include": [ "src", "tests", "jest.setup.ts" ]
+  "include": [ "src", "tests", "jest.setup.ts" ],
+  "exclude": ["node_modules"]
 }
