@@ -2,55 +2,80 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import StockSelector from '../src/components/StockSelector';
 
-describe('StockSelector Component', () => {
-    test('renders the form with all fields and the submit button', () => {
-        render(<StockSelector onSelectStock={jest.fn()} />);
+test('renders StockSelector component', () => {
+    render(<StockSelector onSelectStock={jest.fn()} />);
 
-        // Check for input fields and button
-        expect(screen.getByLabelText(/Stock Symbol/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/Start Date/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/End Date/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /View Chart/i })).toBeInTheDocument();
-    });
+    expect(screen.getByLabelText(/Stock Symbol:/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Select a start date')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Select an end date')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /View Chart/i })).toBeInTheDocument();
+});
 
-    test('calls onSelectStock with correct values when form is submitted', () => {
-        const mockOnSelectStock = jest.fn();
-        render(<StockSelector onSelectStock={mockOnSelectStock} />);
+test('updates stock symbol input value on change', () => {
+    render(<StockSelector onSelectStock={jest.fn()} />);
 
-        // Simulate user input
-        fireEvent.change(screen.getByLabelText(/Stock Symbol/i), {
-            target: { value: 'aapl' },
-        });
+    const stockInput = screen.getByLabelText(/Stock Symbol:/i) as HTMLInputElement;
 
-        // Simulate form submission
-        fireEvent.click(screen.getByRole('button', { name: /View Chart/i }));
+    fireEvent.change(stockInput, { target: { value: 'aapl' } });
 
-        // Check if onSelectStock was called with uppercase symbol and undefined dates
-        expect(mockOnSelectStock).toHaveBeenCalledWith('AAPL', undefined, undefined);
-    });
+    expect(stockInput.value).toBe('aapl');
+});
 
-    //test('handles date selection correctly', () => {
-    //    const mockOnSelectStock = jest.fn();
-    //    render(<StockSelector onSelectStock={mockOnSelectStock} />);
+test('calls onSelectStock with correct arguments when form is submitted', () => {
+    const mockOnSelectStock = jest.fn();
+    render(<StockSelector onSelectStock={mockOnSelectStock} />);
 
-    //    // Assuming you have methods to select dates in your date picker
-    //    // Since testing DatePicker can be complex due to third-party implementations,
-    //    // you might need to mock the DatePicker component or test it at a higher level
+    const stockInput = screen.getByLabelText(/Stock Symbol:/i) as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: /View Chart/i });
 
-    //    // For this example, we'll mock the dates
-    //    const startDate = new Date('2021-01-01');
-    //    const endDate = new Date('2021-12-31');
+    fireEvent.change(stockInput, { target: { value: 'aapl' } });
+    fireEvent.click(submitButton);
 
-    //    // Manually set state since testing DatePicker directly is complex
-    //    fireEvent.change(screen.getByLabelText(/Stock Symbol/i), {
-    //        target: { value: 'goog' },
-    //    });
+    expect(mockOnSelectStock).toHaveBeenCalledWith('AAPL', undefined, undefined);
+});
 
-    //    // Simulate form submission
-    //    fireEvent.click(screen.getByRole('button', { name: /View Chart/i }));
+test('converts stock symbol to uppercase before calling onSelectStock', () => {
+    const mockOnSelectStock = jest.fn();
+    render(<StockSelector onSelectStock={mockOnSelectStock} />);
 
-    //    // Check if onSelectStock was called with correct dates
-    //    // Note: Replace this with actual date selection simulation if possible
-    //    expect(mockOnSelectStock).toHaveBeenCalledWith('GOOG', undefined, undefined);
-    //});
+    const stockInput = screen.getByLabelText(/Stock Symbol:/i) as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: /View Chart/i });
+
+    fireEvent.change(stockInput, { target: { value: 'msft' } });
+    fireEvent.click(submitButton);
+
+    expect(mockOnSelectStock).toHaveBeenCalledWith('MSFT', undefined, undefined);
+});
+
+test('calls onSelectStock with empty string when stock symbol is empty', () => {
+    const mockOnSelectStock = jest.fn();
+    render(<StockSelector onSelectStock={mockOnSelectStock} />);
+
+    const submitButton = screen.getByRole('button', { name: /View Chart/i });
+
+    fireEvent.click(submitButton);
+
+    expect(mockOnSelectStock).toHaveBeenCalledWith('', undefined, undefined);
+});
+
+test('calls onSelectStock with undefined dates when dates are cleared', () => {
+    const mockOnSelectStock = jest.fn();
+    render(<StockSelector onSelectStock={mockOnSelectStock} />);
+
+    const stockInput = screen.getByLabelText(/Stock Symbol:/i) as HTMLInputElement;
+    const startDateInput = screen.getByPlaceholderText('Select a start date') as HTMLInputElement;
+    const endDateInput = screen.getByPlaceholderText('Select an end date') as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: /View Chart/i });
+
+    fireEvent.change(stockInput, { target: { value: 'goog' } });
+    fireEvent.change(startDateInput, { target: { value: '01/01/2021' } });
+    fireEvent.change(endDateInput, { target: { value: '01/31/2021' } });
+
+    // Clear dates
+    fireEvent.change(startDateInput, { target: { value: '' } });
+    fireEvent.change(endDateInput, { target: { value: '' } });
+
+    fireEvent.click(submitButton);
+
+    expect(mockOnSelectStock).toHaveBeenCalledWith('GOOG', undefined, undefined);
 });
