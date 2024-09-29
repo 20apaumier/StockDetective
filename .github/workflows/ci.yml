@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # JUST WANT TO ADD TESTING FOR NOW
+    # services:
+    #   # Define a service for Docker Compose
+    #   docker:
+    #     image: docker:20.10.16-dind
+    #     privileged: true
+    #     options: >-
+    #       --group-add docker
+    #       --group-add sudo
+    #       --entrypoint ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x' # Use '7.0.x' or '6.0.x' if you're targeting an earlier version
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+
+      # - name: Install Docker Compose
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y docker-compose
+
+      - name: Build and test backend
+        working-directory: ./StockAnalysis
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          dotnet test --no-restore --verbosity normal
+
+      - name: Build and test frontend
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build
+          npm test
+
+      # - name: Build Docker images
+      #   run: |
+      #     docker-compose build
+
+      # Push Docker images to a registry
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # - name: Tag and push backend image
+      #   run: |
+      #     docker tag docker-test-backend:latest yourdockerhubusername/docker-test-backend:latest
+      #     docker push yourdockerhubusername/docker-test-backend:latest
+
+      # - name: Tag and push frontend image
+      #   run: |
+      #     docker tag docker-test-frontend:latest yourdockerhubusername/docker-test-frontend:latest
+      #     docker push yourdockerhubusername/docker-test-frontend:latest
