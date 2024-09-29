@@ -57,8 +57,9 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             if (endDate) params.to = endDate.toISOString().split('T')[0];
 
             // fetch stock data from api
+            // https -> http
             axios
-                .get(`https://localhost:7086/Stock/${stockSymbol}`, { params })
+                .get(`http://localhost:7086/Stock/${stockSymbol}`, { params })
                 .then((response) => {
                     setRawData(response.data); // set raw data from api response
                     setLoading(false); // stop loading
