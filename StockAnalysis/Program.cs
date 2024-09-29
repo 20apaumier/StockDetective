@@ -3,11 +3,10 @@ using StockAnalysis.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add user secrets when in development
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration.AddUserSecrets<Program>();
-}
+// Load configuration from user secrets and environment variables
+builder.Configuration
+    .AddUserSecrets<Program>()
+    .AddEnvironmentVariables();
 
 // Configure FmpApiSettings
 builder.Services.Configure<FmpApiSettings>(
@@ -17,11 +16,16 @@ builder.Services.Configure<FmpApiSettings>(
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFmpService, FmpService>();
 
+// Register Health Checks
+//builder.Services.AddHealthChecks()
+//    .AddUrlGroup(new Uri(builder.Configuration["FmpApi:BaseUrl"] + "/ping"), name: "FMP API");
+
 // Add controllers and other services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
@@ -40,15 +44,17 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure middleware
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// Remove or conditionally apply HTTPS redirection
+// app.UseHttpsRedirection();
+
 app.UseAuthorization();
-app.MapControllers();
 app.UseCors("AllowReactApp");
+app.MapControllers();
+
+// Map Health Check Endpoint
+//app.MapHealthChecks("/health");
 
 app.Run();
