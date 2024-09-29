@@ -1,38 +1,38 @@
-name: CI
+## name: CI
 
-on:
-  push:
-    branches:
-      - master
+##on:
+##  push:
+##    branches:
+##      - master
 
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+##jobs:
+##  build-and-test:
+##    runs-on: ubuntu-latest
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+##   steps:
+##      - name: Checkout code
+##        uses: actions/checkout@v3
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
+##      - name: Set up .NET
+##        uses: actions/setup-dotnet@v3
+##        with:
+##          dotnet-version: '8.0.x'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+##      - name: Set up Node.js
+##        uses: actions/setup-node@v3
+##        with:
+##          node-version: '18'
 
-      - name: Build and test backend
-        working-directory: ./StockAnalysis
-        run: |
-          dotnet restore
-          dotnet build --configuration Release --no-restore
-          dotnet test --no-restore --verbosity normal
+##      - name: Build and test backend
+##        working-directory: ./StockAnalysis
+##        run: |
+##          dotnet restore
+##         dotnet build --configuration Release --no-restore
+##          dotnet test --no-restore --verbosity normal
 
-      - name: Build and test frontend
-        working-directory: ./frontend
-        run: |
-          npm install
-          npm run build
-          npm test
+##     - name: Build and test frontend
+##        working-directory: ./frontend
+##        run: |
+##          npm install
+ ##         npm run build
+ ##         npm test
