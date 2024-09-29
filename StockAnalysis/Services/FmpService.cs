@@ -21,14 +21,17 @@ namespace StockAnalysis.Services
             if (options.Value == null)
                 throw new ArgumentException("options.Value cannot be null", nameof(options));
 
-            _apiSettings = options.Value; // access API settings
+            _apiSettings = options.Value;
 
-            _httpClient = httpClientFactory.CreateClient(); // create HttpClient instance
+            if (string.IsNullOrEmpty(_apiSettings.ApiKey))
+                throw new InvalidOperationException("FMP API key is not configured.");
+
+            _httpClient = httpClientFactory.CreateClient();
 
             if (_httpClient == null)
                 throw new InvalidOperationException("The IHttpClientFactory returned null.");
 
-            _httpClient.BaseAddress = new Uri(_apiSettings.BaseUrl); // set base address
+            _httpClient.BaseAddress = new Uri(_apiSettings.BaseUrl);
         }
 
         // method to fetch historical stock prices for a given symbol and optional to/from dates
