@@ -23,15 +23,15 @@ namespace StockAnalysis.Services
 
             _apiSettings = options.Value;
 
-            if (string.IsNullOrEmpty(_apiSettings.ApiKey))
-                throw new InvalidOperationException("FMP API key is not configured.");
-
             _httpClient = httpClientFactory.CreateClient();
 
             if (_httpClient == null)
                 throw new InvalidOperationException("The IHttpClientFactory returned null.");
 
-            _httpClient.BaseAddress = new Uri(_apiSettings.BaseUrl);
+            if (!string.IsNullOrEmpty(_apiSettings.BaseUrl))
+            {
+                _httpClient.BaseAddress = new Uri(_apiSettings.BaseUrl);
+            }
         }
 
         // method to fetch historical stock prices for a given symbol and optional to/from dates
@@ -39,6 +39,13 @@ namespace StockAnalysis.Services
         {
             try
             {
+                // Check if the API key is missing or invalid
+                if (string.IsNullOrEmpty(_apiSettings.ApiKey))
+                {
+                    Console.WriteLine("API key is missing or invalid.");
+                    return null;
+                }
+
                 // first part of url
                 var partialURL = $"{_httpClient.BaseAddress}/historical-price-full/{symbol}";
 
