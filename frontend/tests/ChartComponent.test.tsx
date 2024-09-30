@@ -128,7 +128,7 @@ describe('ChartComponent', () => {
         await waitFor(() => expect(mockedAxios.get).toHaveBeenCalledTimes(1));
 
         // Assert that axios.get was called with the correct URL and parameters
-        expect(mockedAxios.get).toHaveBeenCalledWith('https://localhost:7086/Stock/AAPL', {
+        expect(mockedAxios.get).toHaveBeenCalledWith('http://localhost:7086/Stock/AAPL', {
             params: {
                 from: '2021-01-01',
                 to: '2021-01-31',
