@@ -1,34 +1,24 @@
-/*chart css*/
 .chart-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     width: 100%;
     height: 80vh;
     padding: 20px;
     box-sizing: border-box;
 }
 
-.chart-container {
+.controls-container {
     width: 100%;
-    height: 100%;
-    padding: 20px;
-}
-
-.chart-loading {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 80vh;
-    font-size: 24px;
 }
 
-/*check box*/
 .checkbox-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .checkbox-label {
@@ -42,4 +32,59 @@ input[type="checkbox"] {
     margin-right: 5px;
 }
 
+.drawing-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 10px;
+}
 
+.color-picker,
+.brush-size-slider,
+.eraser-toggle,
+.drawing-buttons,
+.drawing-mode-toggle {
+    margin: 5px 10px;
+}
+
+    .drawing-buttons button,
+    .eraser-toggle button,
+    .drawing-mode-toggle button {
+        margin-right: 5px;
+    }
+
+    .drawing-buttons button,
+    .eraser-toggle button,
+    .drawing-mode-toggle button {
+        padding: 5px 10px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+.active {
+    background-color: #ccc;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+}
+
+.chart-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+    font-size: 24px;
+}
+
+.drawing-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10; /* Ensure it overlays the chart */
+    width: 100%;
+    height: 100%;
+}
