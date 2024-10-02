@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
 import './ChartComponent.css';
@@ -14,8 +14,9 @@ import {
     ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas';
 
-// register chart components for ChartJS
+// Register chart components for ChartJS
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -33,12 +34,22 @@ interface ChartComponentProps {
     endDate?: Date; // optional filter
 }
 
+// Define the shape of your stock data
+interface StockDataItem {
+    date: string;
+    close: number;
+    macd?: number;
+    rsi?: number;
+    sma?: number;
+    // Add other fields as necessary
+}
+
 const ChartComponent: React.FC<ChartComponentProps> = ({
     stockSymbol,
     startDate,
     endDate,
 }) => {
-    const [rawData, setRawData] = useState<any[]>([]); // state to store fetched stock
+    const [rawData, setRawData] = useState<StockDataItem[]>([]); // state to store fetched stock data
     const [loading, setLoading] = useState(false); // toggle loading state
 
     // State variables for toggling technical indicators
@@ -46,22 +57,30 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     const [showRsi, setShowRsi] = useState(false);
     const [showSma, setShowSma] = useState(false);
 
-    // fetch stock data when stockSymbol, startDate, or endDate changes
+    // State for drawing color, brush size, eraser mode, and canvas reference
+    const [drawingColor, setDrawingColor] = useState<string>('#000000'); // Default to black
+    const [brushSize, setBrushSize] = useState<number>(2);
+    const [isErasing, setIsErasing] = useState<boolean>(false);
+    const [isDrawingMode, setIsDrawingMode] = useState<boolean>(false); // New state variable
+    const sketchCanvasRef = useRef<ReactSketchCanvasRef>(null);
+
+    const chartRef = useRef<ChartJS<'line', number[], string>>(null);
+
+    // Fetch stock data when stockSymbol, startDate, or endDate changes
     useEffect(() => {
         if (stockSymbol) {
             setLoading(true); // start loading
-            const params: any = {}; // parameters for api request
+            const params: Record<string, string> = {}; // parameters for api request
 
             // format start/end date
             if (startDate) params.from = startDate.toISOString().split('T')[0];
             if (endDate) params.to = endDate.toISOString().split('T')[0];
 
             // fetch stock data from api
-            // https -> http
             axios
                 .get(`http://localhost:7086/Stock/${stockSymbol}`, { params })
                 .then((response) => {
-                    setRawData(response.data); // set raw data from api response
+                    setRawData(response.data as StockDataItem[]); // set raw data from api response
                     setLoading(false); // stop loading
                 })
                 .catch((error) => {
@@ -74,67 +93,64 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         }
     }, [stockSymbol, startDate, endDate]); // trigger fetch if these change
 
-    // memoized calculation for chart data based on rawData and selected indicators
+    // Memoized calculation for chart data based on rawData and selected indicators
     const chartData = useMemo(() => {
         // return null if no data
         if (!rawData || rawData.length === 0) return null;
 
         // reverse data to show in proper chronological order
-        // potential fix here to make load faster (get order already in chronological order?)
         const reversedData = rawData.slice().reverse();
 
         // extract dates and closing prices from raw data for line graph
-        // potential to change here for candle option
         const labels = reversedData.map((item) =>
             format(parseISO(item.date), 'MMM dd, yyyy')
         );
         const prices = reversedData.map((item) => item.close);
 
         // datasets for the chart
-        // start with the stock price
         const datasets = [
             {
                 label: `${stockSymbol.toUpperCase()} Closing Price`,
                 data: prices,
                 borderColor: 'purple',
                 fill: false,
-                yAxisID: 'y',
+                yAxisID: 'y', // Use primary y-axis
             },
         ];
 
-        // add MACD dataset if showMacd
-        if (showMacd) {
-            const macdData = reversedData.map((item) => item.macd ?? null);
-            datasets.push({
-                label: 'MACD',
-                data: macdData,
-                borderColor: 'red', // red to be unique
-                fill: false,
-                yAxisID: 'y-axis-macd',
-            });
-        }
-
-        // add RSI dataset if showRsi
-        if (showRsi) {
-            const rsiData = reversedData.map((item) => item.rsi ?? null);
-            datasets.push({
-                label: 'RSI',
-                data: rsiData,
-                borderColor: 'green', // greeb to be unique
-                fill: false,
-                yAxisID: 'y-axis-rsi',
-            });
-        }
-
-        // add SMA if showSma
+        // Add SMA if showSma
         if (showSma) {
-            const smaData = reversedData.map((item) => item.sma ?? null);
+            const smaData = reversedData.map((item) => item.sma ?? NaN);
             datasets.push({
                 label: 'SMA',
                 data: smaData,
-                borderColor: 'blue', // blue to be unique
+                borderColor: 'blue',
                 fill: false,
-                yAxisID: 'y',
+                yAxisID: 'y', // Use primary y-axis
+            });
+        }
+
+        // Add MACD dataset if showMacd
+        if (showMacd) {
+            const macdData = reversedData.map((item) => item.macd ?? NaN);
+            datasets.push({
+                label: 'MACD',
+                data: macdData,
+                borderColor: 'red',
+                fill: false,
+                yAxisID: 'y1', // Use secondary y-axis
+            });
+        }
+
+        // Add RSI dataset if showRsi
+        if (showRsi) {
+            const rsiData = reversedData.map((item) => item.rsi ?? NaN);
+            datasets.push({
+                label: 'RSI',
+                data: rsiData,
+                borderColor: 'green',
+                fill: false,
+                yAxisID: 'y1', // Use secondary y-axis
             });
         }
 
@@ -145,6 +161,15 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     const chartOptions: ChartOptions<'line'> = {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        layout: {
+            padding: {
+                right: 50, // Reserve space for secondary y-axis
+            },
+        },
         scales: {
             x: {
                 display: true,
@@ -178,47 +203,21 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     },
                 },
             },
-            'y-axis-macd': {
+            y1: {
                 type: 'linear' as const,
-                display: showMacd,
+                display: showMacd || showRsi, // Display only if MACD or RSI is shown
                 position: 'right',
                 grid: {
                     drawOnChartArea: false,
-                },
-                title: {
-                    display: true,
-                    text: 'MACD',
-                    font: {
-                        size: 16,
-                    },
                 },
                 ticks: {
                     font: {
                         size: 14,
                     },
                 },
-            },
-            'y-axis-rsi': {
-                type: 'linear' as const,
-                display: showRsi,
-                position: 'right',
-                grid: {
-                    drawOnChartArea: false,
+                afterFit: (axis) => {
+                    axis.width = 50; // Fix the width to prevent shifting
                 },
-                title: {
-                    display: true,
-                    text: 'RSI',
-                    font: {
-                        size: 16,
-                    },
-                },
-                ticks: {
-                    font: {
-                        size: 14,
-                    },
-                },
-                min: 0,
-                max: 100,
             },
         },
         plugins: {
@@ -236,6 +235,9 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     size: 24,
                 },
             },
+            tooltip: {
+                enabled: true, // Ensure tooltips are enabled
+            },
         },
     };
 
@@ -251,35 +253,125 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     // render the chart component
     return chartData ? (
         <div className="chart-wrapper">
-            {/* Checkboxes to toggle indicators */}
-            <div className="checkbox-container">
-                <label className="checkbox-label">
-                    <input
-                        type="checkbox"
-                        checked={showMacd}
-                        onChange={(e) => setShowMacd(e.target.checked)}
-                    />
-                    <span>MACD</span>
-                </label>
-                <label className="checkbox-label">
-                    <input
-                        type="checkbox"
-                        checked={showRsi}
-                        onChange={(e) => setShowRsi(e.target.checked)}
-                    />
-                    <span>RSI</span>
-                </label>
-                <label className="checkbox-label">
-                    <input
-                        type="checkbox"
-                        checked={showSma}
-                        onChange={(e) => setShowSma(e.target.checked)}
-                    />
-                    <span>Moving Average</span>
-                </label>
+            {/* Controls */}
+            <div className="controls-container">
+                {/* Checkboxes to toggle indicators */}
+                <div className="checkbox-container">
+                    <label className="checkbox-label">
+                        <input
+                            type="checkbox"
+                            checked={showMacd}
+                            onChange={(e) => setShowMacd(e.target.checked)}
+                        />
+                        <span>MACD</span>
+                    </label>
+                    <label className="checkbox-label">
+                        <input
+                            type="checkbox"
+                            checked={showRsi}
+                            onChange={(e) => setShowRsi(e.target.checked)}
+                        />
+                        <span>RSI</span>
+                    </label>
+                    <label className="checkbox-label">
+                        <input
+                            type="checkbox"
+                            checked={showSma}
+                            onChange={(e) => setShowSma(e.target.checked)}
+                        />
+                        <span>Moving Average</span>
+                    </label>
+                </div>
+
+                {/* Drawing controls */}
+                <div className="drawing-controls">
+                    {/* Toggle Drawing Mode */}
+                    <div className="drawing-mode-toggle">
+                        <button
+                            onClick={() => setIsDrawingMode(!isDrawingMode)}
+                            className={isDrawingMode ? 'active' : ''}
+                        >
+                            {isDrawingMode ? 'Disable Drawing' : 'Enable Drawing'}
+                        </button>
+                    </div>
+
+                    {/* Only show drawing tools when in drawing mode */}
+                    {isDrawingMode && (
+                        <>
+                            {/* Color picker for drawing */}
+                            <div className="color-picker">
+                                <label>
+                                    Drawing Color:
+                                    <input
+                                        type="color"
+                                        value={drawingColor}
+                                        onChange={(e) => {
+                                            setDrawingColor(e.target.value);
+                                            if (isErasing) setIsErasing(false); // Switch to pen mode
+                                        }}
+                                    />
+                                </label>
+                            </div>
+
+                            {/* Brush size slider */}
+                            <div className="brush-size-slider">
+                                <label>
+                                    Brush Size:
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="20"
+                                        value={brushSize}
+                                        onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                                    />
+                                </label>
+                            </div>
+
+                            {/* Eraser toggle */}
+                            <div className="eraser-toggle">
+                                <button
+                                    onClick={() => setIsErasing(!isErasing)}
+                                    className={isErasing ? 'active' : ''}
+                                >
+                                    {isErasing ? 'Switch to Pen' : 'Eraser'}
+                                </button>
+                            </div>
+
+                            {/* Clear and Undo/Redo buttons */}
+                            <div className="drawing-buttons">
+                                <button onClick={() => sketchCanvasRef.current?.undo()}>
+                                    Undo
+                                </button>
+                                <button onClick={() => sketchCanvasRef.current?.redo()}>
+                                    Redo
+                                </button>
+                                <button onClick={() => sketchCanvasRef.current?.clearCanvas()}>
+                                    Clear Drawing
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
+
             <div className="chart-container">
-                <Line data={chartData} options={chartOptions} />
+                <Line ref={chartRef} data={chartData} options={chartOptions} />
+                <ReactSketchCanvas
+                    ref={sketchCanvasRef}
+                    strokeWidth={brushSize}
+                    strokeColor={isErasing ? '#FFFFFF' : drawingColor}
+                    eraserWidth={brushSize}
+                    canvasColor="transparent"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: isDrawingMode ? 'auto' : 'none', // Toggle pointer events
+                    }}
+                    width="100%"
+                    height="100%"
+                    className="drawing-canvas"
+                />
             </div>
         </div>
     ) : (
