@@ -14,7 +14,7 @@ import {
     ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { ReactSketchCanvas } from 'react-sketch-canvas';
+import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas';
 
 // Register chart components for ChartJS
 ChartJS.register(
@@ -34,6 +34,7 @@ interface ChartComponentProps {
     endDate?: Date; // optional filter
 }
 
+// Define the shape of your stock data
 interface StockDataItem {
     date: string;
     close: number;
@@ -61,7 +62,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     const [brushSize, setBrushSize] = useState<number>(2);
     const [isErasing, setIsErasing] = useState<boolean>(false);
     const [isDrawingMode, setIsDrawingMode] = useState<boolean>(false); // New state variable
-    const sketchCanvasRef = useRef<ReactSketchCanvas | null>(null);
+    const sketchCanvasRef = useRef<ReactSketchCanvasRef>(null);
 
     const chartRef = useRef<ChartJS<'line', number[], string>>(null);
 
@@ -119,7 +120,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
 
         // Add SMA if showSma
         if (showSma) {
-            const smaData = reversedData.map((item) => item.sma ?? null);
+            const smaData = reversedData.map((item) => item.sma ?? NaN);
             datasets.push({
                 label: 'SMA',
                 data: smaData,
@@ -131,7 +132,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
 
         // Add MACD dataset if showMacd
         if (showMacd) {
-            const macdData = reversedData.map((item) => item.macd ?? null);
+            const macdData = reversedData.map((item) => item.macd ?? NaN);
             datasets.push({
                 label: 'MACD',
                 data: macdData,
@@ -143,7 +144,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
 
         // Add RSI dataset if showRsi
         if (showRsi) {
-            const rsiData = reversedData.map((item) => item.rsi ?? null);
+            const rsiData = reversedData.map((item) => item.rsi ?? NaN);
             datasets.push({
                 label: 'RSI',
                 data: rsiData,
@@ -215,7 +216,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     },
                 },
                 afterFit: (axis) => {
-                    axis.width = 50;
+                    axis.width = 50; // Fix the width to prevent shifting
                 },
             },
         },
@@ -235,7 +236,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 },
             },
             tooltip: {
-                enabled: true,
+                enabled: true, // Ensure tooltips are enabled
             },
         },
     };
