@@ -1,24 +1,77 @@
-.chart-wrapper {
+/* Main container for the chart and controls */
+.chart-component {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    height: 80vh;
-    padding: 20px;
-    box-sizing: border-box;
 }
 
-.controls-container {
+/* Chart container */
+.chart-container {
+    position: relative;
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    height: 80vh; /* Adjust as needed */
+    margin-bottom: 20px; /* Add bottom margin to separate the chart from the controls */
 }
 
+/* Controls below the chart */
+.chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px; /* Add margin to separate from the next section */
+}
+
+/* Stock selector form */
+.stock-selector-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-right: 20px;
+    margin-bottom: 10px; /* Add bottom margin */
+}
+
+    .stock-selector-form label {
+        display: flex;
+        align-items: center;
+        margin-right: 10px;
+        margin-top: 5px;
+    }
+
+    .stock-selector-form input[type="text"],
+    .stock-selector-form input[type="date"] {
+        margin-left: 5px;
+        padding: 5px;
+        font-size: 14px;
+    }
+
+    .stock-selector-form button {
+        margin-left: 10px;
+        padding: 5px 10px;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+/* Chart buttons */
+.chart-buttons {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px; /* Add bottom margin */
+}
+
+    .chart-buttons button {
+        margin-right: 10px;
+        padding: 5px 10px;
+        font-size: 14px;
+    }
+
+/* Technical indicators checkboxes */
 .checkbox-container {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 20px; /* Add bottom margin */
 }
 
 .checkbox-label {
@@ -26,36 +79,26 @@
     font-size: 14px;
     display: flex;
     align-items: center;
+    margin-bottom: 10px; /* Add bottom margin for small screens */
 }
 
-input[type="checkbox"] {
-    margin-right: 5px;
-}
+    .checkbox-label input[type="checkbox"] {
+        margin-right: 5px;
+    }
 
+/* Drawing controls */
 .drawing-controls {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 20px; /* Add bottom margin */
 }
 
-.color-picker,
-.brush-size-slider,
-.eraser-toggle,
-.drawing-buttons,
-.drawing-mode-toggle {
-    margin: 5px 10px;
-}
-
-    .drawing-buttons button,
-    .eraser-toggle button,
-    .drawing-mode-toggle button {
-        margin-right: 5px;
+    .drawing-controls > div {
+        margin: 5px 10px;
     }
 
-    .drawing-buttons button,
-    .eraser-toggle button,
-    .drawing-mode-toggle button {
+    .drawing-controls button {
         padding: 5px 10px;
         font-size: 14px;
         cursor: pointer;
@@ -63,28 +106,4 @@ input[type="checkbox"] {
 
 .active {
     background-color: #ccc;
-}
-
-.chart-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-}
-
-.chart-loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 80vh;
-    font-size: 24px;
-}
-
-.drawing-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 10;
-    width: 100%;
-    height: 100%;
 }
