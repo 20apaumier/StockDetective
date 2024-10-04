@@ -3,12 +3,18 @@
     public class StockDataWithIndicators
     {
         public DateTime Date { get; set; }
+        public decimal Open { get; set; }
+        public decimal High { get; set; }
+        public decimal Low { get; set; }
         public decimal Close { get; set; }
-        public double? Macd { get; set; }
-        public double? MacdSignal { get; set; }
-        public double? MacdHistogram { get; set; }
-        public double? Rsi { get; set; }
-        public double? Sma { get; set; }
+        public long Volume { get; set; }
+
+        // Technical Indicators
+        public decimal? Macd { get; set; }
+        public decimal? MacdSignal { get; set; }
+        public decimal? MacdHistogram { get; set; }
+        public decimal? Rsi { get; set; }
+        public decimal? Sma { get; set; }
     }
 }
 
