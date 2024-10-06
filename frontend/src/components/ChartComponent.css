@@ -10,8 +10,8 @@
 .chart-container {
     position: relative;
     width: 100%;
-    height: 80vh; /* Adjust as needed */
-    margin-bottom: 20px; /* Add bottom margin to separate the chart from the controls */
+    height: 500px;
+    margin-bottom: 20px;
 }
 
 /* Controls below the chart */
@@ -21,6 +21,35 @@
     justify-content: center;
     align-items: center;
     margin-bottom: 20px; /* Add margin to separate from the next section */
+}
+
+.indicator-chart-container {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    margin-top: 10px;
+}
+
+.chart-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    z-index: 3;
+}
+
+.chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
 }
 
 /* Stock selector form */
@@ -85,25 +114,3 @@
     .checkbox-label input[type="checkbox"] {
         margin-right: 5px;
     }
-
-/* Drawing controls */
-.drawing-controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 20px; /* Add bottom margin */
-}
-
-    .drawing-controls > div {
-        margin: 5px 10px;
-    }
-
-    .drawing-controls button {
-        padding: 5px 10px;
-        font-size: 14px;
-        cursor: pointer;
-    }
-
-.active {
-    background-color: #ccc;
-}
