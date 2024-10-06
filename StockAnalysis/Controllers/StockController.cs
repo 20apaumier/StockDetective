@@ -2,6 +2,7 @@
 using Skender.Stock.Indicators;
 using StockAnalysis.Models;
 using StockAnalysis.Services;
+using System.Globalization;
 
 namespace StockAnalysis.Controllers
 {
@@ -28,13 +29,13 @@ namespace StockAnalysis.Controllers
             // Map to Quote objects for Skender lib
             List<Quote> quotes = stockDataList.Select(sd => new Quote
             {
-                Date = DateTime.Parse(sd.Date),
+                Date = DateTime.ParseExact(sd.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture),
                 Open = sd.Open,
                 High = sd.High,
                 Low = sd.Low,
                 Close = sd.Close,
                 Volume = sd.Volume
-            }).ToList();
+            }).OrderBy(q => q.Date).ToList();
 
             // Compute indicators
             var macdResults = quotes.GetMacd().ToList();
@@ -42,25 +43,29 @@ namespace StockAnalysis.Controllers
             var smaResults = quotes.GetSma(14).ToList(); // 14-period SMA
 
             // Merge the stock data with computed technical indicators
-            var dataWithIndicators = (from sd in stockDataList
-                                      let date = DateTime.Parse(sd.Date) // parse data
-                                      join macd in macdResults on date equals macd.Date into macdJoin
-                                      from macdResult in macdJoin.DefaultIfEmpty() // left join with MACD results
-                                      join rsi in rsiResults on date equals rsi.Date into rsiJoin
-                                      from rsiResult in rsiJoin.DefaultIfEmpty() // left join with RSI results
-                                      join sma in smaResults on date equals sma.Date into smaJoin
-                                      from smaResult in smaJoin.DefaultIfEmpty() // left join with SMA results
-                                      // new object w stock data and indicators
-                                      select new StockDataWithIndicators
-                                      {
-                                          Date = date,
-                                          Close = sd.Close,
-                                          Macd = macdResult?.Macd,
-                                          MacdSignal = macdResult?.Signal,
-                                          MacdHistogram = macdResult?.Histogram,
-                                          Rsi = rsiResult?.Rsi,
-                                          Sma = smaResult?.Sma
-                                      }).ToList();
+            var dataWithIndicators = stockDataList.Select(sd =>
+            {
+                var date = DateTime.ParseExact(sd.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+                var macdResult = macdResults.FirstOrDefault(m => m.Date == date);
+                var rsiResult = rsiResults.FirstOrDefault(r => r.Date == date);
+                var smaResult = smaResults.FirstOrDefault(s => s.Date == date);
+
+                return new StockDataWithIndicators
+                {
+                    Date = date,
+                    Open = sd.Open,
+                    High = sd.High,
+                    Low = sd.Low,
+                    Close = sd.Close,
+                    Volume = sd.Volume,
+                    Macd = macdResult?.Macd != null ? (decimal?)macdResult.Macd : null,
+                    MacdSignal = macdResult?.Signal != null ? (decimal?)macdResult.Signal : null,
+                    MacdHistogram = macdResult?.Histogram != null ? (decimal?)macdResult.Histogram : null,
+                    Rsi = rsiResult?.Rsi != null ? (decimal?)rsiResult.Rsi : null,
+                    Sma = smaResult?.Sma != null ? (decimal?)smaResult.Sma : null
+                };
+            }).OrderBy(d => d.Date).ToList();
 
             // return stock data w indicators and HTTP 200 response
             return Ok(dataWithIndicators);
