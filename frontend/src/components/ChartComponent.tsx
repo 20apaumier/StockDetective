@@ -86,6 +86,26 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         { label: 'All Time', value: 'all' as const },
     ];
 
+    // Trading parameters state
+    const [priceBuyThreshold, setPriceBuyThreshold] = useState<number | undefined>(undefined);
+    const [priceSellThreshold, setPriceSellThreshold] = useState<number | undefined>(undefined);
+    const [rsiBuyThreshold, setRsiBuyThreshold] = useState<number | undefined>(undefined);
+    const [rsiSellThreshold, setRsiSellThreshold] = useState<number | undefined>(undefined);
+    const [enableMacdCrossovers, setEnableMacdCrossovers] = useState<boolean>(false);
+    const [enableSmaBuy, setEnableSmaBuy] = useState<boolean>(false);
+    const [enableSmaSell, setEnableSmaSell] = useState<boolean>(false);
+
+    // Trade amount settings
+    const [tradeAmountType, setTradeAmountType] = useState<'shares' | 'dollars'>('shares');
+    const [tradeShares, setTradeShares] = useState<number>(1);
+    const [tradeDollars, setTradeDollars] = useState<number>(1000);
+
+    // Trade signals and profit
+    const [tradeSignals, setTradeSignals] = useState<
+        { type: 'buy' | 'sell'; date: string; price: number }[]
+    >([]);
+    const [totalProfit, setTotalProfit] = useState<number>(0);
+
     // Fetch stock data when the stock symbol or time frame changes
     useEffect(() => {
         if (currentStockSymbol) {
@@ -125,7 +145,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 width: chartContainerRef.current.clientWidth,
                 height: chartContainerRef.current.clientHeight || 500,
                 layout: {
-                    background: '#FFFFFF', // Changed to 'background'
+                    background: '#FFFFFF',
                     textColor: '#000',
                 },
                 grid: {
@@ -141,8 +161,11 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 },
                 timeScale: {
                     borderColor: '#D1D4DC',
+                    timeVisible: true,
+                    secondsVisible: false,
                 },
                 rightPriceScale: {
+                    visible: true,
                     borderColor: '#D1D4DC',
                 },
             });
@@ -159,10 +182,15 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             const macdChart = createChart(macdChartContainerRef.current, {
                 width: macdChartContainerRef.current.clientWidth,
                 height: 100,
-                layout: { background: '#FFFFFF', textColor: '#000' }, // Changed to 'background'
+                layout: { background: '#FFFFFF', textColor: '#000' },
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 crosshair: { mode: CrosshairMode.Normal },
-                timeScale: { visible: false },
+                timeScale: {
+                    visible: true,
+                    borderColor: '#D1D4DC',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
             });
             macdChartRef.current = macdChart;
             macdSeriesRef.current = macdChart.addLineSeries({
@@ -176,10 +204,15 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             const rsiChart = createChart(rsiChartContainerRef.current, {
                 width: rsiChartContainerRef.current.clientWidth,
                 height: 100,
-                layout: { background: '#FFFFFF', textColor: '#000' }, // Changed to 'background'
+                layout: { background: '#FFFFFF', textColor: '#000' },
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 crosshair: { mode: CrosshairMode.Normal },
-                timeScale: { visible: false },
+                timeScale: {
+                    visible: true,
+                    borderColor: '#D1D4DC',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
             });
             rsiChartRef.current = rsiChart;
             rsiSeriesRef.current = rsiChart.addLineSeries({
@@ -188,15 +221,20 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             });
         }
 
-        // Initialize SMA chart (optional)
+        // Initialize SMA chart
         if (showSma && !smaChartRef.current && smaChartContainerRef.current) {
             const smaChart = createChart(smaChartContainerRef.current, {
                 width: smaChartContainerRef.current.clientWidth,
                 height: 100,
-                layout: { background: '#FFFFFF', textColor: '#000' }, // Changed to 'background'
+                layout: { background: '#FFFFFF', textColor: '#000' },
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 crosshair: { mode: CrosshairMode.Normal },
-                timeScale: { visible: false },
+                timeScale: {
+                    visible: true,
+                    borderColor: '#D1D4DC',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
             });
             smaChartRef.current = smaChart;
             smaSeriesRef.current = smaChart.addLineSeries({
@@ -247,7 +285,12 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         // Set data for MACD chart
         if (showMacd && macdSeriesRef.current) {
             const macdData: LineData[] = sortedData
-                .filter((item) => item.macd !== undefined && item.macd !== null && !isNaN(item.macd))
+                .filter(
+                    (item) =>
+                        item.macd !== undefined &&
+                        item.macd !== null &&
+                        !isNaN(item.macd as number)
+                )
                 .map((item) => ({
                     time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
                     value: item.macd as number,
@@ -262,7 +305,12 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         // Set data for RSI chart
         if (showRsi && rsiSeriesRef.current) {
             const rsiData: LineData[] = sortedData
-                .filter((item) => item.rsi !== undefined && item.rsi !== null && !isNaN(item.rsi))
+                .filter(
+                    (item) =>
+                        item.rsi !== undefined &&
+                        item.rsi !== null &&
+                        !isNaN(item.rsi as number)
+                )
                 .map((item) => ({
                     time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
                     value: item.rsi as number,
@@ -277,7 +325,12 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         // Set data for SMA chart
         if (showSma && smaSeriesRef.current) {
             const smaData: LineData[] = sortedData
-                .filter((item) => item.sma !== undefined && item.sma !== null && !isNaN(item.sma))
+                .filter(
+                    (item) =>
+                        item.sma !== undefined &&
+                        item.sma !== null &&
+                        !isNaN(item.sma as number)
+                )
                 .map((item) => ({
                     time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
                     value: item.sma as number,
@@ -294,7 +347,163 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         macdChartRef.current?.timeScale().fitContent();
         rsiChartRef.current?.timeScale().fitContent();
         smaChartRef.current?.timeScale().fitContent();
-    }, [rawData, showMacd, showRsi, showSma]);
+
+        // Process trading signals
+        const signals: { type: 'buy' | 'sell'; date: string; price: number }[] = [];
+        let holding = false;
+        let sharesHeld = 0;
+
+        for (let i = 0; i < sortedData.length; i++) {
+            const item = sortedData[i];
+
+            // Buy Signal
+            let buySignal = false;
+
+            // Price Buy Condition
+            if (
+                priceBuyThreshold !== undefined &&
+                item.close <= priceBuyThreshold &&
+                !holding
+            ) {
+                buySignal = true;
+            }
+
+            // RSI Buy Condition
+            if (
+                rsiBuyThreshold !== undefined &&
+                item.rsi !== undefined &&
+                item.rsi <= rsiBuyThreshold &&
+                !holding
+            ) {
+                buySignal = true;
+            }
+
+            // SMA Buy Condition
+            if (
+                enableSmaBuy &&
+                item.sma !== undefined &&
+                item.close <= item.sma &&
+                !holding
+            ) {
+                buySignal = true;
+            }
+
+            // MACD Buy Condition
+            if (
+                enableMacdCrossovers &&
+                i > 0 &&
+                !holding &&
+                sortedData[i - 1].macd !== undefined &&
+                sortedData[i - 1].macdSignal !== undefined &&
+                item.macd !== undefined &&
+                item.macdSignal !== undefined &&
+                (sortedData[i - 1].macd as number) <= (sortedData[i - 1].macdSignal as number) &&
+                (item.macd as number) > (item.macdSignal as number)
+            ) {
+                buySignal = true;
+            }
+
+            if (buySignal) {
+                signals.push({ type: 'buy', date: item.date, price: item.close });
+                holding = true;
+                continue;
+            }
+
+            // Sell Signal
+            let sellSignal = false;
+
+            // Price Sell Condition
+            if (
+                priceSellThreshold !== undefined &&
+                item.close >= priceSellThreshold &&
+                holding
+            ) {
+                sellSignal = true;
+            }
+
+            // RSI Sell Condition
+            if (
+                rsiSellThreshold !== undefined &&
+                item.rsi !== undefined &&
+                item.rsi >= rsiSellThreshold &&
+                holding
+            ) {
+                sellSignal = true;
+            }
+
+            // SMA Sell Condition
+            if (
+                enableSmaSell &&
+                item.sma !== undefined &&
+                item.close >= item.sma &&
+                holding
+            ) {
+                sellSignal = true;
+            }
+
+            // MACD Sell Condition
+            if (
+                enableMacdCrossovers &&
+                i > 0 &&
+                holding &&
+                sortedData[i - 1].macd !== undefined &&
+                sortedData[i - 1].macdSignal !== undefined &&
+                item.macd !== undefined &&
+                item.macdSignal !== undefined &&
+                (sortedData[i - 1].macd as number) >= (sortedData[i - 1].macdSignal as number) &&
+                (item.macd as number) < (item.macdSignal as number)
+            ) {
+                sellSignal = true;
+            }
+
+            if (sellSignal) {
+                signals.push({ type: 'sell', date: item.date, price: item.close });
+                holding = false;
+            }
+        }
+
+        setTradeSignals(signals);
+
+        // Calculate Profit
+        let profit = 0;
+        for (let i = 0; i < signals.length - 1; i += 2) {
+            const buy = signals[i];
+            const sell = signals[i + 1];
+            let shares = tradeShares;
+
+            if (tradeAmountType === 'dollars') {
+                shares = tradeDollars / buy.price;
+            }
+
+            const tradeProfit = (sell.price - buy.price) * shares;
+            profit += tradeProfit;
+        }
+        setTotalProfit(profit);
+
+        // Add markers to the chart
+        if (signals.length > 0 && mainSeriesRef.current) {
+            const markers = signals.map((signal) => ({
+                time: format(parseISO(signal.date), 'yyyy-MM-dd') as Time,
+                position: signal.type === 'buy' ? 'belowBar' : 'aboveBar',
+                color: signal.type === 'buy' ? 'green' : 'red',
+                shape: signal.type === 'buy' ? 'arrowUp' : 'arrowDown',
+                text: signal.type.toUpperCase(),
+            }));
+            mainSeriesRef.current.setMarkers(markers);
+        }
+    }, [
+        rawData,
+        priceBuyThreshold,
+        priceSellThreshold,
+        rsiBuyThreshold,
+        rsiSellThreshold,
+        enableMacdCrossovers,
+        enableSmaBuy,
+        enableSmaSell,
+        tradeAmountType,
+        tradeShares,
+        tradeDollars,
+    ]);
 
     // Update chart size on window resize
     useEffect(() => {
@@ -445,6 +654,172 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     />
                     <span>Moving Average</span>
                 </label>
+            </div>
+
+            {/* Trading Parameters */}
+            <div className="trading-parameters">
+                <h3>Set Trading Parameters</h3>
+                <table className="parameters-table">
+                    <thead>
+                        <tr>
+                            <th>Indicator</th>
+                            <th>Buy Parameter</th>
+                            <th>Sell Parameter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {/* Price Parameters */}
+                        <tr>
+                            <td>Price</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    placeholder="Buy Price"
+                                    value={priceBuyThreshold || ''}
+                                    onChange={(e) =>
+                                        setPriceBuyThreshold(parseFloat(e.target.value))
+                                    }
+                                />
+                            </td>
+                            <td>
+                                <input
+                                    type="number"
+                                    placeholder="Sell Price"
+                                    value={priceSellThreshold || ''}
+                                    onChange={(e) =>
+                                        setPriceSellThreshold(parseFloat(e.target.value))
+                                    }
+                                />
+                            </td>
+                        </tr>
+                        {/* RSI Parameters */}
+                        <tr>
+                            <td>RSI</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    placeholder="Buy when RSI <"
+                                    value={rsiBuyThreshold || ''}
+                                    onChange={(e) =>
+                                        setRsiBuyThreshold(parseFloat(e.target.value))
+                                    }
+                                />
+                            </td>
+                            <td>
+                                <input
+                                    type="number"
+                                    placeholder="Sell when RSI >"
+                                    value={rsiSellThreshold || ''}
+                                    onChange={(e) =>
+                                        setRsiSellThreshold(parseFloat(e.target.value))
+                                    }
+                                />
+                            </td>
+                        </tr>
+                        {/* MACD Parameters */}
+                        <tr>
+                            <td>MACD Crossovers</td>
+                            <td>
+                                <input
+                                    type="checkbox"
+                                    checked={enableMacdCrossovers}
+                                    onChange={(e) => setEnableMacdCrossovers(e.target.checked)}
+                                />
+                                <span>Enable</span>
+                            </td>
+                            <td></td>
+                        </tr>
+                        {/* SMA Parameters */}
+                        <tr>
+                            <td>SMA</td>
+                            <td>
+                                <input
+                                    type="checkbox"
+                                    checked={enableSmaBuy}
+                                    onChange={(e) => setEnableSmaBuy(e.target.checked)}
+                                />
+                                <span>Buy when Price &lt; SMA</span>
+                            </td>
+                            <td>
+                                <input
+                                    type="checkbox"
+                                    checked={enableSmaSell}
+                                    onChange={(e) => setEnableSmaSell(e.target.checked)}
+                                />
+                                <span>Sell when Price &gt; SMA</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* Trade Amount Settings */}
+                <div className="trade-amount-settings">
+                    <h4>Trade Amount</h4>
+                    <label>
+                        <input
+                            type="radio"
+                            name="tradeAmountType"
+                            value="shares"
+                            checked={tradeAmountType === 'shares'}
+                            onChange={() => setTradeAmountType('shares')}
+                        />
+                        Number of Shares:
+                        <input
+                            type="number"
+                            value={tradeShares}
+                            onChange={(e) => setTradeShares(parseFloat(e.target.value))}
+                            disabled={tradeAmountType !== 'shares'}
+                        />
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="tradeAmountType"
+                            value="dollars"
+                            checked={tradeAmountType === 'dollars'}
+                            onChange={() => setTradeAmountType('dollars')}
+                        />
+                        Dollar Amount ($):
+                        <input
+                            type="number"
+                            value={tradeDollars}
+                            onChange={(e) => setTradeDollars(parseFloat(e.target.value))}
+                            disabled={tradeAmountType !== 'dollars'}
+                        />
+                    </label>
+                </div>
+            </div>
+
+            {/* Trade Signals Table */}
+            <div className="trade-signals">
+                <h3>Trade Signals</h3>
+                {tradeSignals.length > 0 ? (
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tradeSignals.map((signal, index) => (
+                                <tr key={index}>
+                                    <td>{signal.type.toUpperCase()}</td>
+                                    <td>{signal.date}</td>
+                                    <td>{signal.price.toFixed(2)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    <p>No trade signals generated.</p>
+                )}
+            </div>
+
+            {/* Profit Display */}
+            <div className="profit-display">
+                <h3>Total Profit: ${totalProfit.toFixed(2)}</h3>
             </div>
         </div>
     );
