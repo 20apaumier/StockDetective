@@ -114,3 +114,50 @@
     .checkbox-label input[type="checkbox"] {
         margin-right: 5px;
     }
+
+.trading-parameters {
+    margin: 20px 0;
+    width: 100%;
+}
+
+.parameters-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .parameters-table th,
+    .parameters-table td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+    }
+
+.trade-amount-settings {
+    margin-top: 20px;
+}
+
+    .trade-amount-settings label {
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .trade-amount-settings input[type="number"] {
+        margin-left: 10px;
+    }
+
+.trade-signals {
+    margin: 20px 0;
+    width: 100%;
+}
+
+    .trade-signals table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .trade-signals th,
+    .trade-signals td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+    }
