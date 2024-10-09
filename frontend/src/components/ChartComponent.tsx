@@ -70,6 +70,14 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     const [stockSymbolInput, setStockSymbolInput] = useState<string>(stockSymbol);
     const [currentStockSymbol, setCurrentStockSymbol] = useState<string>(stockSymbol);
 
+    // State variables for notification form
+    const [email, setEmail] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [notificationIndicator, setNotificationIndicator] = useState('');
+    const [notificationThreshold, setNotificationThreshold] = useState('');
+    const [notificationCondition, setNotificationCondition] = useState('Above');
+    const [existingNotifications, setExistingNotifications] = useState([]);
+
     // State for selected time frame
     const [selectedTimeFrame, setSelectedTimeFrame] = useState<number | 'all'>(30);
 
@@ -541,6 +549,83 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         setRawData([]); // Reset data when symbol changes
     };
 
+    // Handle notification form submission
+    const handleNotificationSubmit = async (e) => {
+        e.preventDefault();
+
+        // Validation: At least one contact method must be provided
+        if (!email && !phoneNumber) {
+            alert('Please enter at least an email address or phone number.');
+            return;
+        }
+
+        const notificationData = {
+            email: email || null,
+            phoneNumber: phoneNumber || null,
+            indicator: notificationIndicator,
+            stockSymbol: currentStockSymbol,
+            threshold: parseFloat(notificationThreshold),
+            condition: notificationCondition,
+        };
+
+        try {
+            await axios.post('http://localhost:7086/notifications', notificationData);
+            alert('Notification subscription created successfully!');
+            // Clear the form
+            setEmail('');
+            setPhoneNumber('');
+            setNotificationIndicator('');
+            setNotificationThreshold('');
+            setNotificationCondition('Above');
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            alert('Failed to create notification subscription. Please try again.');
+        }
+    };
+
+    useEffect(() => {
+        if (email || phoneNumber) {
+            fetchExistingNotifications();
+        }
+    }, [email, phoneNumber]);
+
+    // Function to fetch existing notifications
+    const fetchExistingNotifications = async () => {
+        try {
+            // Fetch by email and phone number
+            let response = null;
+
+            if (email) {
+                response = await axios.get(
+                    `http://localhost:7086/notifications/email/${encodeURIComponent(email)}`
+                );
+            } else if (phoneNumber) {
+                response = await axios.get(
+                    `http://localhost:7086/notifications/phone/${encodeURIComponent(phoneNumber)}`
+                );
+            } else {
+                return; // No contact info provided
+            }
+
+            setExistingNotifications(response.data);
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            alert('Failed to fetch notifications. Please try again.');
+        }
+    };
+
+    const handleDeleteNotification = async (id) => {
+        try {
+            await axios.delete(`http://localhost:7086/notifications/${id}`);
+            alert('Notification deleted successfully.');
+            // Refresh the list
+            fetchExistingNotifications();
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            alert('Failed to delete notification. Please try again.');
+        }
+    };
+
     return (
         <div className="chart-component">
             {/* Main Chart Container */}
@@ -820,6 +905,116 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             {/* Profit Display */}
             <div className="profit-display">
                 <h3>Total Profit: ${totalProfit.toFixed(2)}</h3>
+            </div>
+
+            <div className="notification-form">
+                <h3>Set Up Notifications</h3>
+                <form onSubmit={handleNotificationSubmit}>
+                    <label>
+                        Email or Phone Number:
+                        <input
+                            type="text"
+                            value={contactInfo}
+                            onChange={(e) => setContactInfo(e.target.value)}
+                            required
+                        />
+                    </label>
+                    <label>
+                        Indicator:
+                        <select
+                            value={notificationIndicator}
+                            onChange={(e) => setNotificationIndicator(e.target.value)}
+                            required
+                        >
+                            <option value="">Select Indicator</option>
+                            <option value="Price">Price</option>
+                            <option value="RSI">RSI</option>
+                            <option value="MACD">MACD</option>
+                            <option value="SMA">SMA</option>
+                        </select>
+                    </label>
+                    <label>
+                        Threshold:
+                        <input
+                            type="number"
+                            value={notificationThreshold}
+                            onChange={(e) => setNotificationThreshold(e.target.value)}
+                            required
+                        />
+                    </label>
+                    <label>
+                        Condition:
+                        <select
+                            value={notificationCondition}
+                            onChange={(e) => setNotificationCondition(e.target.value)}
+                            required
+                        >
+                            <option value="Above">Above</option>
+                            <option value="Below">Below</option>
+                        </select>
+                    </label>
+                    <button type="submit">Subscribe</button>
+                </form>
+            </div>
+
+
+            <div className="notification-form">
+                <h3>Set Up Notifications</h3>
+                <form onSubmit={handleNotificationSubmit}>
+                    <label>
+                        Email Address:
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </label>
+                    <label>
+                        Phone Number:
+                        <input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                        />
+                    </label>
+                    <p>Please enter at least an email address or phone number.</p>
+                    <label>
+                        Indicator:
+                        <select
+                            value={notificationIndicator}
+                            onChange={(e) => setNotificationIndicator(e.target.value)}
+                            required
+                        >
+                            <option value="">Select Indicator</option>
+                            <option value="Price">Price</option>
+                            <option value="RSI">RSI</option>
+                            <option value="MACD">MACD</option>
+                            <option value="SMA">SMA</option>
+                            <!-- Add other indicators as needed -->
+                        </select>
+                    </label>
+                    <label>
+                        Threshold:
+                        <input
+                            type="number"
+                            value={notificationThreshold}
+                            onChange={(e) => setNotificationThreshold(e.target.value)}
+                            required
+                        />
+                    </label>
+                    <label>
+                        Condition:
+                        <select
+                            value={notificationCondition}
+                            onChange={(e) => setNotificationCondition(e.target.value)}
+                            required
+                        >
+                            <option value="Above">Above</option>
+                            <option value="Below">Below</option>
+                        </select>
+                    </label>
+                    <button type="submit">Subscribe</button>
+                </form>
             </div>
         </div>
     );

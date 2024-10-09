@@ -1,5 +1,9 @@
 using StockAnalysis.Models;
 using StockAnalysis.Services;
+using MongoDB.Driver;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using StockAnalysis.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,9 +20,18 @@ builder.Services.Configure<FmpApiSettings>(
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFmpService, FmpService>();
 
-// Register Health Checks
-//builder.Services.AddHealthChecks()
-//    .AddUrlGroup(new Uri(builder.Configuration["FmpApi:BaseUrl"] + "/ping"), name: "FMP API");
+builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDBSettings"));
+builder.Services.AddSingleton<IMongoClient>(s =>
+	new MongoClient(builder.Configuration.GetValue<string>("MongoDBSettings:ConnectionString")));
+
+builder.Services.AddScoped(s =>
+{
+	var settings = s.GetRequiredService<IOptions<MongoDBSettings>>().Value;
+	var client = s.GetRequiredService<IMongoClient>();
+	return client.GetDatabase(settings.DatabaseName);
+});
+
+builder.Services.AddScoped<NotificationRepository>();
 
 // Add controllers and other services
 builder.Services.AddControllers();
@@ -32,13 +45,13 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.SetIsOriginAllowed(origin =>
-            {
+		{
                 // Allow any origin that is localhost
                 return new Uri(origin).Host == "localhost";
             })
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-        });
+				   .AllowAnyMethod()
+				   .AllowAnyHeader();
+		});
 });
 
 var app = builder.Build();
