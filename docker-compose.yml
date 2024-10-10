@@ -1,15 +1,28 @@
 services:
   backend:
     build:
-      context: ./StockAnalysis
-    env_file:
-        - StockAnalysis/.env
+      context: .  # Set the context to the root of the solution
+      dockerfile: StockAnalysis/Dockerfile  # Point to the backend Dockerfile
     ports:
       - "7086:7086"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - AzureWebJobsStorage=UseDevelopmentStorage=true
+
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend  # Context for the frontend project
     ports:
       - "5173:5173"
     depends_on:
       - backend
+
+  azurefunctions:
+    build:
+      context: .  # Change context to the root of the solution
+      dockerfile: StockDetectiveFunctions/Dockerfile  # Dockerfile for Azure Functions
+    ports:
+      - "7071:7071"
+    environment:
+      - AzureWebJobsStorage=UseDevelopmentStorage=true
+    command: "func host start --verbose"

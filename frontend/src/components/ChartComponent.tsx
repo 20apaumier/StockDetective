@@ -6,6 +6,7 @@ import {
     IChartApi,
     ISeriesApi,
     CandlestickData,
+    SeriesMarkerPosition,
     Time,
 } from 'lightweight-charts';
 import { parseISO, format, subDays } from 'date-fns';
@@ -153,7 +154,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 width: chartContainerRef.current.clientWidth,
                 height: chartContainerRef.current.clientHeight || 500,
                 layout: {
-                    background: '#FFFFFF',
+                    background: { color: '#FFFFFF' },
                     textColor: '#000',
                 },
                 grid: {
@@ -190,7 +191,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             const macdChart = createChart(macdChartContainerRef.current, {
                 width: macdChartContainerRef.current.clientWidth,
                 height: 100,
-                layout: { background: '#FFFFFF', textColor: '#000' },
+                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 crosshair: { mode: CrosshairMode.Normal },
                 timeScale: {
@@ -212,7 +213,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             const rsiChart = createChart(rsiChartContainerRef.current, {
                 width: rsiChartContainerRef.current.clientWidth,
                 height: 100,
-                layout: { background: '#FFFFFF', textColor: '#000' },
+                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 crosshair: { mode: CrosshairMode.Normal },
                 timeScale: {
@@ -234,7 +235,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             const smaChart = createChart(smaChartContainerRef.current, {
                 width: smaChartContainerRef.current.clientWidth,
                 height: 100,
-                layout: { background: '#FFFFFF', textColor: '#000' },
+                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 crosshair: { mode: CrosshairMode.Normal },
                 timeScale: {
@@ -359,7 +360,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         // Process trading signals
         const signals: { type: 'buy' | 'sell'; date: string; price: number }[] = [];
         let holding = false;
-        let sharesHeld = 0;
 
         for (let i = 0; i < sortedData.length; i++) {
             const item = sortedData[i];
@@ -550,7 +550,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     };
 
     // Handle notification form submission
-    const handleNotificationSubmit = async (e) => {
+    const handleNotificationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         // Validation: At least one contact method must be provided
@@ -559,6 +559,15 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             return;
         }
 
+        // Fetch existing notifications before creating a new subscription
+        //await fetchExistingNotifications();
+
+        if (isNaN(parseFloat(notificationThreshold))) {
+            alert('Please enter a valid number for the threshold.');
+            return;
+        }
+
+        // Create the notification after fetching existing ones
         const notificationData = {
             email: email || null,
             phoneNumber: phoneNumber || null,
@@ -567,6 +576,13 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             threshold: parseFloat(notificationThreshold),
             condition: notificationCondition,
         };
+
+        console.log("notificationData", notificationData);
+
+        if (!notificationData.email && !notificationData.phoneNumber) {
+            alert("Please enter at least an email address or phone number.");
+            return;
+        }
 
         try {
             await axios.post('http://localhost:7086/notifications', notificationData);
@@ -578,53 +594,47 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             setNotificationThreshold('');
             setNotificationCondition('Above');
         } catch (error) {
+            console.log(error);
             console.error('Error creating notification:', error);
             alert('Failed to create notification subscription. Please try again.');
         }
     };
 
-    useEffect(() => {
-        if (email || phoneNumber) {
-            fetchExistingNotifications();
-        }
-    }, [email, phoneNumber]);
-
     // Function to fetch existing notifications
-    const fetchExistingNotifications = async () => {
-        try {
-            // Fetch by email and phone number
-            let response = null;
+    //const fetchExistingNotifications = async () => {
+    //    try {
+    //        let response = null;
 
-            if (email) {
-                response = await axios.get(
-                    `http://localhost:7086/notifications/email/${encodeURIComponent(email)}`
-                );
-            } else if (phoneNumber) {
-                response = await axios.get(
-                    `http://localhost:7086/notifications/phone/${encodeURIComponent(phoneNumber)}`
-                );
-            } else {
-                return; // No contact info provided
-            }
+    //        if (email) {
+    //            response = await axios.get(
+    //                `http://localhost:7086/notifications/email/${encodeURIComponent(email)}`
+    //            );
+    //        } else if (phoneNumber) {
+    //            response = await axios.get(
+    //                `http://localhost:7086/notifications/phone/${encodeURIComponent(phoneNumber)}`
+    //            );
+    //        } else {
+    //            return; // No contact info provided
+    //        }
 
-            setExistingNotifications(response.data);
-        } catch (error) {
-            console.error('Error fetching notifications:', error);
-            alert('Failed to fetch notifications. Please try again.');
-        }
-    };
+    //        setExistingNotifications(response.data);
+    //    } catch (error) {
+    //        console.error('Error fetching notifications:', error);
+    //        alert('Failed to fetch notifications. Please try again.');
+    //    }
+    //};
 
-    const handleDeleteNotification = async (id) => {
-        try {
-            await axios.delete(`http://localhost:7086/notifications/${id}`);
-            alert('Notification deleted successfully.');
-            // Refresh the list
-            fetchExistingNotifications();
-        } catch (error) {
-            console.error('Error deleting notification:', error);
-            alert('Failed to delete notification. Please try again.');
-        }
-    };
+    //const handleDeleteNotification = async (id) => {
+    //    try {
+    //        await axios.delete(`http://localhost:7086/notifications/${id}`);
+    //        alert('Notification deleted successfully.');
+    //        // Refresh the list
+    //        fetchExistingNotifications();
+    //    } catch (error) {
+    //        console.error('Error deleting notification:', error);
+    //        alert('Failed to delete notification. Please try again.');
+    //    }
+    //};
 
     return (
         <div className="chart-component">
@@ -907,57 +917,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 <h3>Total Profit: ${totalProfit.toFixed(2)}</h3>
             </div>
 
-            <div className="notification-form">
-                <h3>Set Up Notifications</h3>
-                <form onSubmit={handleNotificationSubmit}>
-                    <label>
-                        Email or Phone Number:
-                        <input
-                            type="text"
-                            value={contactInfo}
-                            onChange={(e) => setContactInfo(e.target.value)}
-                            required
-                        />
-                    </label>
-                    <label>
-                        Indicator:
-                        <select
-                            value={notificationIndicator}
-                            onChange={(e) => setNotificationIndicator(e.target.value)}
-                            required
-                        >
-                            <option value="">Select Indicator</option>
-                            <option value="Price">Price</option>
-                            <option value="RSI">RSI</option>
-                            <option value="MACD">MACD</option>
-                            <option value="SMA">SMA</option>
-                        </select>
-                    </label>
-                    <label>
-                        Threshold:
-                        <input
-                            type="number"
-                            value={notificationThreshold}
-                            onChange={(e) => setNotificationThreshold(e.target.value)}
-                            required
-                        />
-                    </label>
-                    <label>
-                        Condition:
-                        <select
-                            value={notificationCondition}
-                            onChange={(e) => setNotificationCondition(e.target.value)}
-                            required
-                        >
-                            <option value="Above">Above</option>
-                            <option value="Below">Below</option>
-                        </select>
-                    </label>
-                    <button type="submit">Subscribe</button>
-                </form>
-            </div>
-
-
+            {/* Notifications */}
             <div className="notification-form">
                 <h3>Set Up Notifications</h3>
                 <form onSubmit={handleNotificationSubmit}>
@@ -990,7 +950,6 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                             <option value="RSI">RSI</option>
                             <option value="MACD">MACD</option>
                             <option value="SMA">SMA</option>
-                            <!-- Add other indicators as needed -->
                         </select>
                     </label>
                     <label>

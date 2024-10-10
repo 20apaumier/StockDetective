@@ -8,7 +8,7 @@ namespace StockAnalysis.Models
 	{
 		[BsonId]
 		[BsonRepresentation(BsonType.ObjectId)]
-		public string Id { get; set; }
+		public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
 		[EmailAddress]
 		public string Email { get; set; }
@@ -33,3 +33,4 @@ namespace StockAnalysis.Models
 			return !string.IsNullOrEmpty(Email) || !string.IsNullOrEmpty(PhoneNumber);
 		}
 	}
+}

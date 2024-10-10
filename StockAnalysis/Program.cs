@@ -1,9 +1,9 @@
 using StockAnalysis.Models;
 using StockAnalysis.Services;
 using MongoDB.Driver;
+using MongoDB.Bson;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using StockAnalysis.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,18 +20,7 @@ builder.Services.Configure<FmpApiSettings>(
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFmpService, FmpService>();
 
-builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDBSettings"));
-builder.Services.AddSingleton<IMongoClient>(s =>
-	new MongoClient(builder.Configuration.GetValue<string>("MongoDBSettings:ConnectionString")));
-
-builder.Services.AddScoped(s =>
-{
-	var settings = s.GetRequiredService<IOptions<MongoDBSettings>>().Value;
-	var client = s.GetRequiredService<IMongoClient>();
-	return client.GetDatabase(settings.DatabaseName);
-});
-
-builder.Services.AddScoped<NotificationRepository>();
+builder.Services.AddScoped<StockNotificationService>();
 
 // Add controllers and other services
 builder.Services.AddControllers();
@@ -51,10 +40,19 @@ builder.Services.AddCors(options =>
             })
 				   .AllowAnyMethod()
 				   .AllowAnyHeader();
+			options.AddPolicy("AllowFrontendApp", policy =>
+			{
+				policy.WithOrigins("http://localhost:5173")
+					  .AllowAnyHeader()
+					  .AllowAnyMethod();
+			});
 		});
 });
 
 var app = builder.Build();
+
+app.UseCors("AllowReactApp");
+app.UseCors("AllowFrontendApp");
 
 // Configure middleware
 app.UseSwagger();
@@ -64,7 +62,7 @@ app.UseSwaggerUI();
 // app.UseHttpsRedirection();
 
 app.UseAuthorization();
-app.UseCors("AllowReactApp");
+
 app.MapControllers();
 
 // Map Health Check Endpoint

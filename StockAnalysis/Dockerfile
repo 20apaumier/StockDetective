@@ -1,31 +1,29 @@
-# Stage 1: Base Image
+# Use the official ASP.NET Core runtime as a parent image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 7086
 
-# Stage 2: Build Image
+# Use the SDK image to build the app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy csproj and restore as distinct layers
-COPY ["StockAnalysis.csproj", "./"]
+# Copy the project files and restore dependencies (includes SharedModels reference)
+COPY ["StockAnalysis/StockAnalysis.csproj", "./"]
 RUN dotnet restore "./StockAnalysis.csproj"
 
-# Copy the remaining source code and build
+# Copy the rest of the code
 COPY . .
+
+# Build the project
+WORKDIR "/src/StockAnalysis"
 RUN dotnet build "StockAnalysis.csproj" -c Release -o /app/build
 
-# Stage 3: Publish Image
+# Publish the app
 FROM build AS publish
-RUN dotnet publish "StockAnalysis.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "StockAnalysis.csproj" -c Release -o /app/publish
 
-# Stage 4: Final Image
+# Use the base image to run the app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-
-# Configure the application to listen on all network interfaces on port 7086
-ENV ASPNETCORE_URLS=http://+:7086
-ENV ASPNETCORE_ENVIRONMENT=Development
-
 ENTRYPOINT ["dotnet", "StockAnalysis.dll"]
