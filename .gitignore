@@ -6,6 +6,7 @@
 #environment variables
 .env
 *.env
+*.appsettings.json
 
 # User-specific files
 *.rsuser
