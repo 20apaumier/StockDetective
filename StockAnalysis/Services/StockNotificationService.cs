@@ -4,14 +4,18 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
+using StockAnalysis.Models;
 
 public class StockNotificationService
 {
 	private readonly TableClient _tableClient;
+	private readonly AZSettings _azsettings;
 
-	public StockNotificationService(IConfiguration configuration)
+	public StockNotificationService(IOptions<AZSettings> options)
 	{
-		string connectionString = configuration["AzureTableStorage:ConnectionString"];
+		_azsettings = options.Value;
+		string connectionString = _azsettings.ConnectionString;
 		var tableServiceClient = new TableServiceClient(connectionString);
 		_tableClient = tableServiceClient.GetTableClient("StockNotifications");
 		_tableClient.CreateIfNotExists();
