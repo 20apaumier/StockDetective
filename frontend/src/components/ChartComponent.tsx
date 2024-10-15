@@ -220,7 +220,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             {loading && <div className="loading-overlay">Loading...</div>}
 
             {/* Time Frame Selection */}
-            <div className="time-frame-buttons">
+            <div className="timeframes-section">
                 {timeFrames.map((frame) => (
                     <button
                         key={frame.label}

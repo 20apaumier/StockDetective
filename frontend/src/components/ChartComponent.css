@@ -161,3 +161,91 @@
         padding: 8px;
         text-align: center;
     }
+
+
+.indicators-section {
+    margin-bottom: 20px; /* Adjust as needed for spacing */
+}
+
+.indicators-checkboxes label {
+    margin-right: 15px; /* Space between checkboxes */
+}
+
+.indicators-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Space between checkbox labels */
+}
+
+/* Add styles for the timeframes section */
+.timeframes-section {
+    margin-bottom: 20px; /* Adjust as needed for spacing */
+}
+
+.timeframes-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Space between buttons */
+}
+
+    .timeframes-buttons button {
+        padding: 8px 12px;
+    }
+
+        /* Optional: Style active button */
+        .timeframes-buttons button.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+.chart-component {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chart-container {
+    width: 100%;
+    max-width: 800px; /* Adjust as needed */
+    margin-bottom: 30px;
+}
+
+.controls-container {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.trade-parameters-container,
+.notifications-container,
+.profit-display-container {
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 30px;
+}
+
+.trade-parameters-container,
+.notifications-container {
+    /* Ensure both components have the same styling */
+    display: flex;
+    justify-content: center;
+}
+
+.trade-parameters,
+.notification-form {
+    width: 100%;
+}
+
+.notification-form {
+    /* Additional styling to match the trade parameters component */
+}
+
+.success-message {
+    color: green;
+}
+
+.error-message {
+    color: red;
+}
