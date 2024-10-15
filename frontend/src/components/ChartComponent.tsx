@@ -7,7 +7,6 @@ import {
     IChartApi,
     ISeriesApi,
     CandlestickData,
-    Time,
 } from 'lightweight-charts';
 import { parseISO, format, subDays } from 'date-fns';
 import IndicatorComponent from './IndicatorComponent';
@@ -38,29 +37,25 @@ interface StockDataItem {
     sma?: number;
 }
 
-interface TradeParameters {
-    [indicator: string]: {
-        buyThreshold: number;
-        sellThreshold: number;
-        tradeAmount: number;
-        tradeAmountType: 'shares' | 'dollars';
-    };
-}
-
 const ChartComponent: React.FC<ChartComponentProps> = ({
     chartId,
     stockSymbol,
     addChart,
     removeChart,
 }) => {
+    // state to store raw stock data fetched from the api
     const [rawData, setRawData] = useState<StockDataItem[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // refs for chart and series APIs
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartApiRef = useRef<IChartApi | null>(null);
     const mainSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+
+    // state to maange the selected time frame for data fetching (default 30)
     const [selectedTimeFrame, setSelectedTimeFrame] = useState<number | 'all'>(30);
 
-    // Indicator selection state
+    // state to manage visibility of technical indicator charts
     const [showIndicators, setShowIndicators] = useState<{
         macd: boolean;
         rsi: boolean;
@@ -71,19 +66,20 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         sma: false,
     });
 
-    // Indicator data
+    // state to store indicator data
     const [macdData, setMacdData] = useState<LineData[]>([]);
     const [rsiData, setRsiData] = useState<LineData[]>([]);
     const [smaData, setSmaData] = useState<LineData[]>([]);
 
-    // Trade parameters
+    // state to store trade parameters received from TradeParametersComponent
     const [tradeParameters, setTradeParameters] = useState<TradeParameters>({});
 
-    // Handle parameters change from TradeParametersComponent
+    // Handle to update trade parameters when changed in TradeParametersComponent
     const handleParametersChange = (params: TradeParameters) => {
         setTradeParameters(params);
     };
 
+    // available time frames for data fetching (good with candles)
     const timeFrames: { label: string; value: number | 'all' }[] = [
         { label: '1 Week', value: 7 },
         { label: '2 Weeks', value: 14 },
@@ -96,29 +92,32 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         { label: 'All Time', value: 'all' },
     ];
 
-    // Fetch stock data
+    // Fetch stock data based on selected time frame or stock symbol changes
     useEffect(() => {
         const fetchStockData = async () => {
             if (stockSymbol) {
+                // set loading to true, init new params Record, set toDate to today
                 setLoading(true);
                 const params: Record<string, string> = {};
                 const toDate = new Date();
 
+                // calculate the from date based on the users selected time frame
+                // set params to and from
                 if (selectedTimeFrame !== 'all') {
                     const fromDate = subDays(toDate, selectedTimeFrame as number);
                     params.from = fromDate.toISOString().split('T')[0];
                 }
                 params.to = toDate.toISOString().split('T')[0];
 
-                console.log('API Params:', params);
-
                 try {
+                    // fetch stock data from backend api
                     const response = await axios.get(
                         `http://localhost:7086/Stock/${stockSymbol}`,
                         { params }
                     );
                     console.log('API Response Data:', response.data);
 
+                    // sort data in ascending order
                     const sortedData: StockDataItem[] = response.data.sort(
                         (a: StockDataItem, b: StockDataItem) =>
                             new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -126,7 +125,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     setRawData(sortedData);
                     console.log('Raw Data:', sortedData);
 
-                    // Prepare indicator data
+                    // Prepare indicator data (MACD, RSI, SMA)
                     const prepareIndicatorData = (
                         dataKey: keyof StockDataItem,
                         setter: React.Dispatch<React.SetStateAction<LineData[]>>
@@ -146,6 +145,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                         console.log(`${dataKey} Data:`, indicatorData);
                     };
 
+                    // prepare data for each indicator
                     prepareIndicatorData('macd', setMacdData);
                     prepareIndicatorData('rsi', setRsiData);
                     prepareIndicatorData('sma', setSmaData);
@@ -161,7 +161,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         fetchStockData();
     }, [stockSymbol, selectedTimeFrame]);
 
-    // Initialize chart
+    // initliaze the chart once the component mounts
     useEffect(() => {
         if (chartContainerRef.current && !chartApiRef.current) {
             const chart = createChart(chartContainerRef.current, {
@@ -177,14 +177,14 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             mainSeriesRef.current = chart.addCandlestickSeries();
         }
 
-        // Cleanup function
+        // Cleanup function to remove the chart when the component unmounts
         return () => {
             chartApiRef.current?.remove();
             chartApiRef.current = null;
         };
-    }, []); // Empty dependency array ensures this runs once on mount
+    }, []);
 
-    // Update chart data when rawData changes
+    // Effect to update the chart data whenever rawData changes
     useEffect(() => {
         if (chartApiRef.current && mainSeriesRef.current && rawData.length > 0) {
             const candlestickData: CandlestickData[] = rawData.map((item) => ({
@@ -202,7 +202,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         }
     }, [rawData]);
 
-    // Handle indicator selection
+    // handler to toggle visibility of technical indicators
     const handleIndicatorChange = (indicator: 'macd' | 'rsi' | 'sma', value: boolean) => {
         setShowIndicators((prevState) => ({
             ...prevState,
@@ -215,8 +215,10 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             <div
                 className="chart-container"
                 ref={chartContainerRef}
-                style={{ width: '100%', height: '500px' }} // Ensure height is set
+                style={{ width: '100%', height: '500px' }}
             ></div>
+
+            {/* If loading, just show Loading... */}
             {loading && <div className="loading-overlay">Loading...</div>}
 
             {/* Time Frame Selection */}
@@ -260,7 +262,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 </label>
             </div>
 
-            {/* Indicators */}
+            {/* Render Technical Indicators if selected */}
             {showIndicators.macd && macdData.length > 0 && (
                 <IndicatorComponent data={macdData} type="MACD" />
             )}
