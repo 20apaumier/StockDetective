@@ -11,8 +11,9 @@ import {
 } from 'lightweight-charts';
 import { parseISO, format, subDays } from 'date-fns';
 import IndicatorComponent from './IndicatorComponent';
-//import TradeParametersComponent from './TradeParametersComponent';
-//import ProfitDisplayComponent from './ProfitDisplayComponent';
+import TradeParametersComponent, { TradeParameters } from './TradeParametersComponent';
+import NotificationsComponent from './NotificationsComponent';
+import ProfitDisplayComponent from './ProfitDisplayComponent';
 import { LineData } from '../types';
 import './ChartComponent.css';
 
@@ -37,6 +38,15 @@ interface StockDataItem {
     sma?: number;
 }
 
+interface TradeParameters {
+    [indicator: string]: {
+        buyThreshold: number;
+        sellThreshold: number;
+        tradeAmount: number;
+        tradeAmountType: 'shares' | 'dollars';
+    };
+}
+
 const ChartComponent: React.FC<ChartComponentProps> = ({
     chartId,
     stockSymbol,
@@ -51,7 +61,11 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     const [selectedTimeFrame, setSelectedTimeFrame] = useState<number | 'all'>(30);
 
     // Indicator selection state
-    const [showIndicators, setShowIndicators] = useState({
+    const [showIndicators, setShowIndicators] = useState<{
+        macd: boolean;
+        rsi: boolean;
+        sma: boolean;
+    }>({
         macd: false,
         rsi: false,
         sma: false,
@@ -61,6 +75,14 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
     const [macdData, setMacdData] = useState<LineData[]>([]);
     const [rsiData, setRsiData] = useState<LineData[]>([]);
     const [smaData, setSmaData] = useState<LineData[]>([]);
+
+    // Trade parameters
+    const [tradeParameters, setTradeParameters] = useState<TradeParameters>({});
+
+    // Handle parameters change from TradeParametersComponent
+    const handleParametersChange = (params: TradeParameters) => {
+        setTradeParameters(params);
+    };
 
     const timeFrames: { label: string; value: number | 'all' }[] = [
         { label: '1 Week', value: 7 },
@@ -91,7 +113,10 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 console.log('API Params:', params);
 
                 try {
-                    const response = await axios.get(`http://localhost:7086/Stock/${stockSymbol}`, { params });
+                    const response = await axios.get(
+                        `http://localhost:7086/Stock/${stockSymbol}`,
+                        { params }
+                    );
                     console.log('API Response Data:', response.data);
 
                     const sortedData: StockDataItem[] = response.data.sort(
@@ -101,60 +126,29 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     setRawData(sortedData);
                     console.log('Raw Data:', sortedData);
 
-                    // Prepare candlestick data
-                    const candlestickData: CandlestickData[] = sortedData.map((item) => ({
-                        time: format(parseISO(item.date), 'yyyy-MM-dd'),
-                        open: item.open,
-                        high: item.high,
-                        low: item.low,
-                        close: item.close,
-                    }));
-                    console.log('Candlestick Data:', candlestickData);
+                    // Prepare indicator data
+                    const prepareIndicatorData = (
+                        dataKey: keyof StockDataItem,
+                        setter: React.Dispatch<React.SetStateAction<LineData[]>>
+                    ) => {
+                        const indicatorData: LineData[] = sortedData
+                            .map((item) => ({
+                                time: format(parseISO(item.date), 'yyyy-MM-dd'),
+                                value:
+                                    item[dataKey] !== null &&
+                                        item[dataKey] !== undefined &&
+                                        !isNaN(Number(item[dataKey]))
+                                        ? Number(item[dataKey])
+                                        : null,
+                            }))
+                            .filter((item) => item.value !== null);
+                        setter(indicatorData as LineData[]);
+                        console.log(`${dataKey} Data:`, indicatorData);
+                    };
 
-                    // Prepare MACD data
-                    const macdData: LineData[] = sortedData
-                        .map((item) => ({
-                            time: format(parseISO(item.date), 'yyyy-MM-dd'),
-                            value:
-                                item.macd !== null &&
-                                    item.macd !== undefined &&
-                                    !isNaN(Number(item.macd))
-                                    ? Number(item.macd)
-                                    : null,
-                        }))
-                        .filter((item) => item.value !== null);
-                    setMacdData(macdData);
-                    console.log('MACD Data:', macdData);
-
-                    // Prepare RSI data
-                    const rsiData: LineData[] = sortedData
-                        .map((item) => ({
-                            time: format(parseISO(item.date), 'yyyy-MM-dd'),
-                            value:
-                                item.rsi !== null &&
-                                    item.rsi !== undefined &&
-                                    !isNaN(Number(item.rsi))
-                                    ? Number(item.rsi)
-                                    : null,
-                        }))
-                        .filter((item) => item.value !== null);
-                    setRsiData(rsiData);
-                    console.log('RSI Data:', rsiData);
-
-                    // Prepare SMA data
-                    const smaData: LineData[] = sortedData
-                        .map((item) => ({
-                            time: format(parseISO(item.date), 'yyyy-MM-dd'),
-                            value:
-                                item.sma !== null &&
-                                    item.sma !== undefined &&
-                                    !isNaN(Number(item.sma))
-                                    ? Number(item.sma)
-                                    : null,
-                        }))
-                        .filter((item) => item.value !== null);
-                    setSmaData(smaData);
-                    console.log('SMA Data:', smaData);
+                    prepareIndicatorData('macd', setMacdData);
+                    prepareIndicatorData('rsi', setRsiData);
+                    prepareIndicatorData('sma', setSmaData);
                 } catch (error) {
                     console.error('Error fetching stock data:', error);
                     alert(`Failed to fetch data for symbol '${stockSymbol}'`);
@@ -276,6 +270,19 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             {showIndicators.sma && smaData.length > 0 && (
                 <IndicatorComponent data={smaData} type="SMA" />
             )}
+
+            {/* Trade Parameters Component */}
+            <TradeParametersComponent onParametersChange={handleParametersChange} />
+
+            {/* Profit Display Component */}
+            <ProfitDisplayComponent
+                indicatorData={{ MACD: macdData, RSI: rsiData, SMA: smaData }}
+                tradeParameters={tradeParameters}
+                rawData={rawData}
+            />
+
+            {/* Notifications Component */}
+            <NotificationsComponent stockSymbol={stockSymbol} />
         </div>
     );
 };

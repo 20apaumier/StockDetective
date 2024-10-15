@@ -1,22 +1,11 @@
 // MultiChartComponent.tsx
 import React, { useState } from 'react';
 import ChartComponent from './ChartComponent';
-import IndicatorComponent from './IndicatorComponent';
-import TradeParametersComponent from './TradeParametersComponent';
-import NotificationsComponent from './NotificationsComponent';
-import ProfitDisplayComponent from './ProfitDisplayComponent';
 import './MultiChartComponent.css';
-import { LineData } from '../types';
 
 interface ChartConfig {
     id: number;
     stockSymbol: string;
-    startDate?: Date;
-    endDate?: Date;
-    macdData?: LineData[];
-    rsiData?: LineData[];
-    smaData?: LineData[];
-    totalProfit?: number;
 }
 
 const MultiChartComponent: React.FC = () => {
@@ -25,45 +14,56 @@ const MultiChartComponent: React.FC = () => {
         { id: 0, stockSymbol: 'AAPL' }, // Default chart with 'AAPL'
     ]);
 
+    const [newStockSymbol, setNewStockSymbol] = useState('');
+
     // Function to add a new chart
     const addChart = (stockSymbol: string) => {
+        if (stockSymbol.trim() === '') {
+            alert('Please enter a stock symbol');
+            return;
+        }
+
         setCharts((prevCharts) => [
             ...prevCharts,
             {
                 id: prevCharts.length > 0 ? prevCharts[prevCharts.length - 1].id + 1 : 0,
-                stockSymbol,
+                stockSymbol: stockSymbol.trim().toUpperCase(),
             },
         ]);
     };
 
+    // Function to handle adding a chart with user input
+    const handleAddChart = () => {
+        if (newStockSymbol.trim() !== '') {
+            addChart(newStockSymbol.trim().toUpperCase());
+            setNewStockSymbol('');
+        } else {
+            alert('Please enter a stock symbol');
+        }
+    };
+
     // Function to remove a chart
     const removeChart = (id: number) => {
+        if (charts.length <= 1) {
+            alert('Cannot remove the last chart');
+            return;
+        }
         setCharts((prevCharts) => prevCharts.filter((chart) => chart.id !== id));
-    };
-
-    // Function to handle updating trading parameters (buy/sell thresholds)
-    const updateTradingParameters = (id: number, buyThreshold: number, sellThreshold: number) => {
-        setCharts((prevCharts) =>
-            prevCharts.map((chart) =>
-                chart.id === id
-                    ? {
-                        ...chart,
-                        // Logic for updating trading parameters and calculating profit
-                        totalProfit: calculateProfit(buyThreshold, sellThreshold, chart),
-                    }
-                    : chart
-            )
-        );
-    };
-
-    // Placeholder function to calculate profit
-    const calculateProfit = (buyThreshold: number, sellThreshold: number, chart: ChartConfig) => {
-        // You can replace this with your logic to calculate profits based on the buy/sell thresholds
-        return Math.random() * 1000; // For example, returning a random value for now
     };
 
     return (
         <div className="multi-chart-container">
+            {/* Add Chart Section */}
+            <div className="add-chart-section">
+                <input
+                    type="text"
+                    placeholder="Enter Stock Symbol"
+                    value={newStockSymbol}
+                    onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())}
+                />
+                <button onClick={handleAddChart}>Add Chart</button>
+            </div>
+
             {charts.length === 0 ? (
                 <p>No charts available. Refresh the page to load the default chart.</p>
             ) : (
@@ -75,30 +75,14 @@ const MultiChartComponent: React.FC = () => {
                         <ChartComponent
                             chartId={chart.id}
                             stockSymbol={chart.stockSymbol}
-                            startDate={chart.startDate}
-                            endDate={chart.endDate}
                             addChart={addChart}
                             removeChart={removeChart}
                         />
 
-                        {/* Indicators for this Chart */}
-                        <div className="indicator-section">
-                            <h3>Indicators</h3>
-                            <IndicatorComponent data={chart.macdData || []} type="MACD" />
-                            <IndicatorComponent data={chart.rsiData || []} type="RSI" />
-                            <IndicatorComponent data={chart.smaData || []} type="SMA" />
-                        </div>
-
-                        {/* Trading Parameters for this Chart */}
-                        <TradeParametersComponent
-                            onUpdate={(buy, sell) => updateTradingParameters(chart.id, buy, sell)}
-                        />
-
-                        {/* Add and Remove Chart Buttons */}
-                        <div className="chart-buttons">
-                            <button onClick={() => addChart(stockSymbol)}>Add Another Chart</button>
-                            <button onClick={() => removeChart(chartId)}>Remove Chart</button>
-                        </div>
+                        {/* Remove Chart Button */}
+                        {charts.length > 1 && (
+                            <button onClick={() => removeChart(chart.id)}>Remove Chart</button>
+                        )}
                     </div>
                 ))
             )}
