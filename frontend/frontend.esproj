@@ -14,4 +14,7 @@
     <TypeScriptConfiguration Remove="src\services\**" />
     <TypeScriptConfiguration Remove="src\store\**" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="tests\" />
+  </ItemGroup>
 </Project>

@@ -1,3 +1,4 @@
+// ChartComponent.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
@@ -6,13 +7,15 @@ import {
     IChartApi,
     ISeriesApi,
     CandlestickData,
-    SeriesMarkerPosition,
-    Time,
 } from 'lightweight-charts';
 import { parseISO, format, subDays } from 'date-fns';
+import IndicatorComponent from './IndicatorComponent';
+import TradeParametersComponent, { TradeParameters } from './TradeParametersComponent';
+import NotificationsComponent from './NotificationsComponent';
+import ProfitDisplayComponent from './ProfitDisplayComponent';
+import { LineData } from '../types';
 import './ChartComponent.css';
 
-// Define the props for the ChartComponent
 interface ChartComponentProps {
     chartId: number;
     stockSymbol: string;
@@ -20,7 +23,6 @@ interface ChartComponentProps {
     removeChart: (id: number) => void;
 }
 
-// Define the shape of the stock data
 interface StockDataItem {
     date: string;
     open: number;
@@ -35,55 +37,50 @@ interface StockDataItem {
     sma?: number;
 }
 
-interface LineData {
-    time: Time;
-    value: number;
-}
-
 const ChartComponent: React.FC<ChartComponentProps> = ({
     chartId,
     stockSymbol,
     addChart,
     removeChart,
 }) => {
-    // State variables
+    // state to store raw stock data fetched from the api
     const [rawData, setRawData] = useState<StockDataItem[]>([]);
     const [loading, setLoading] = useState(false);
-    const [showMacd, setShowMacd] = useState(false);
-    const [showRsi, setShowRsi] = useState(false);
-    const [showSma, setShowSma] = useState(false);
+
+    // refs for chart and series APIs
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartApiRef = useRef<IChartApi | null>(null);
     const mainSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
 
-    // Indicator chart refs
-    const macdChartContainerRef = useRef<HTMLDivElement>(null);
-    const rsiChartContainerRef = useRef<HTMLDivElement>(null);
-    const smaChartContainerRef = useRef<HTMLDivElement>(null);
-    const macdChartRef = useRef<IChartApi | null>(null);
-    const rsiChartRef = useRef<IChartApi | null>(null);
-    const smaChartRef = useRef<IChartApi | null>(null);
-    const macdSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-    const rsiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-    const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-
-    // State for stock symbol input and current stock symbol
-    const [stockSymbolInput, setStockSymbolInput] = useState<string>(stockSymbol);
-    const [currentStockSymbol, setCurrentStockSymbol] = useState<string>(stockSymbol);
-
-    // State variables for notification form
-    const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [notificationIndicator, setNotificationIndicator] = useState('');
-    const [notificationThreshold, setNotificationThreshold] = useState('');
-    const [notificationCondition, setNotificationCondition] = useState('Above');
-    const [existingNotifications, setExistingNotifications] = useState([]);
-
-    // State for selected time frame
+    // state to maange the selected time frame for data fetching (default 30)
     const [selectedTimeFrame, setSelectedTimeFrame] = useState<number | 'all'>(30);
 
-    // Time frames
-    const timeFrames = [
+    // state to manage visibility of technical indicator charts
+    const [showIndicators, setShowIndicators] = useState<{
+        macd: boolean;
+        rsi: boolean;
+        sma: boolean;
+    }>({
+        macd: false,
+        rsi: false,
+        sma: false,
+    });
+
+    // state to store indicator data
+    const [macdData, setMacdData] = useState<LineData[]>([]);
+    const [rsiData, setRsiData] = useState<LineData[]>([]);
+    const [smaData, setSmaData] = useState<LineData[]>([]);
+
+    // state to store trade parameters received from TradeParametersComponent
+    const [tradeParameters, setTradeParameters] = useState<TradeParameters>({});
+
+    // Handle to update trade parameters when changed in TradeParametersComponent
+    const handleParametersChange = (params: TradeParameters) => {
+        setTradeParameters(params);
+    };
+
+    // available time frames for data fetching (good with candles)
+    const timeFrames: { label: string; value: number | 'all' }[] = [
         { label: '1 Week', value: 7 },
         { label: '2 Weeks', value: 14 },
         { label: '30 Days', value: 30 },
@@ -92,889 +89,202 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
         { label: '1 Year', value: 365 },
         { label: '2 Years', value: 730 },
         { label: '5 Years', value: 1825 },
-        { label: 'All Time', value: 'all' as const },
+        { label: 'All Time', value: 'all' },
     ];
 
-    // Trading parameters state
-    const [priceBuyThreshold, setPriceBuyThreshold] = useState<number | undefined>(undefined);
-    const [priceSellThreshold, setPriceSellThreshold] = useState<number | undefined>(undefined);
-    const [rsiBuyThreshold, setRsiBuyThreshold] = useState<number | undefined>(undefined);
-    const [rsiSellThreshold, setRsiSellThreshold] = useState<number | undefined>(undefined);
-    const [enableMacdCrossovers, setEnableMacdCrossovers] = useState<boolean>(false);
-    const [enableSmaBuy, setEnableSmaBuy] = useState<boolean>(false);
-    const [enableSmaSell, setEnableSmaSell] = useState<boolean>(false);
-
-    // Trade amount settings
-    const [tradeAmountType, setTradeAmountType] = useState<'shares' | 'dollars'>('shares');
-    const [tradeShares, setTradeShares] = useState<number>(1);
-    const [tradeDollars, setTradeDollars] = useState<number>(1000);
-
-    // Trade signals and profit
-    const [tradeSignals, setTradeSignals] = useState<
-        { type: 'buy' | 'sell'; date: string; price: number }[]
-    >([]);
-    const [totalProfit, setTotalProfit] = useState<number>(0);
-
-    // Fetch stock data when the stock symbol or time frame changes
+    // Fetch stock data based on selected time frame or stock symbol changes
     useEffect(() => {
-        if (currentStockSymbol) {
-            setLoading(true);
-            const params: Record<string, string> = {};
+        const fetchStockData = async () => {
+            if (stockSymbol) {
+                // set loading to true, init new params Record, set toDate to today
+                setLoading(true);
+                const params: Record<string, string> = {};
+                const toDate = new Date();
 
-            let fromDate: Date | undefined;
-            const toDate = new Date();
+                // calculate the from date based on the users selected time frame
+                // set params to and from
+                if (selectedTimeFrame !== 'all') {
+                    const fromDate = subDays(toDate, selectedTimeFrame as number);
+                    params.from = fromDate.toISOString().split('T')[0];
+                }
+                params.to = toDate.toISOString().split('T')[0];
 
-            if (selectedTimeFrame !== 'all') {
-                fromDate = subDays(toDate, selectedTimeFrame);
-                params.from = fromDate.toISOString().split('T')[0];
-            }
-
-            params.to = toDate.toISOString().split('T')[0];
-
-            axios
-                .get(`http://localhost:7086/Stock/${currentStockSymbol}`, { params })
-                .then((response) => {
-                    setRawData(response.data as StockDataItem[]);
-                    setLoading(false);
-                })
-                .catch((error) => {
-                    console.error('Error fetching data:', error);
-                    alert(
-                        `Failed to fetch data for symbol '${currentStockSymbol}'. Please try again.`
+                try {
+                    // fetch stock data from backend api
+                    const response = await axios.get(
+                        `http://localhost:7086/Stock/${stockSymbol}`,
+                        { params }
                     );
-                    setLoading(false);
-                });
-        }
-    }, [currentStockSymbol, selectedTimeFrame]);
+                    console.log('API Response Data:', response.data);
 
-    // Initialize the chart
+                    // sort data in ascending order
+                    const sortedData: StockDataItem[] = response.data.sort(
+                        (a: StockDataItem, b: StockDataItem) =>
+                            new Date(a.date).getTime() - new Date(b.date).getTime()
+                    );
+                    setRawData(sortedData);
+                    console.log('Raw Data:', sortedData);
+
+                    // Prepare indicator data (MACD, RSI, SMA)
+                    const prepareIndicatorData = (
+                        dataKey: keyof StockDataItem,
+                        setter: React.Dispatch<React.SetStateAction<LineData[]>>
+                    ) => {
+                        const indicatorData: LineData[] = sortedData
+                            .map((item) => ({
+                                time: format(parseISO(item.date), 'yyyy-MM-dd'),
+                                value:
+                                    item[dataKey] !== null &&
+                                        item[dataKey] !== undefined &&
+                                        !isNaN(Number(item[dataKey]))
+                                        ? Number(item[dataKey])
+                                        : null,
+                            }))
+                            .filter((item) => item.value !== null);
+                        setter(indicatorData as LineData[]);
+                        console.log(`${dataKey} Data:`, indicatorData);
+                    };
+
+                    // prepare data for each indicator
+                    prepareIndicatorData('macd', setMacdData);
+                    prepareIndicatorData('rsi', setRsiData);
+                    prepareIndicatorData('sma', setSmaData);
+                } catch (error) {
+                    console.error('Error fetching stock data:', error);
+                    alert(`Failed to fetch data for symbol '${stockSymbol}'`);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchStockData();
+    }, [stockSymbol, selectedTimeFrame]);
+
+    // initliaze the chart once the component mounts
     useEffect(() => {
         if (chartContainerRef.current && !chartApiRef.current) {
             const chart = createChart(chartContainerRef.current, {
-                width: chartContainerRef.current.clientWidth,
-                height: chartContainerRef.current.clientHeight || 500,
-                layout: {
-                    background: { color: '#FFFFFF' },
-                    textColor: '#000',
-                },
-                grid: {
-                    vertLines: {
-                        color: '#e0e0e0',
-                    },
-                    horzLines: {
-                        color: '#e0e0e0',
-                    },
-                },
-                crosshair: {
-                    mode: CrosshairMode.Normal,
-                },
-                timeScale: {
-                    borderColor: '#D1D4DC',
-                    timeVisible: true,
-                    secondsVisible: false,
-                },
-                rightPriceScale: {
-                    visible: true,
-                    borderColor: '#D1D4DC',
-                },
+                width: chartContainerRef.current.clientWidth || 600,
+                height: 500,
+                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
+                grid: { vertLines: { color: '#e0e0e0' }, horzLines: { color: '#e0e0e0' } },
+                crosshair: { mode: CrosshairMode.Normal },
+                timeScale: { borderColor: '#D1D4DC', timeVisible: true, secondsVisible: false },
+                rightPriceScale: { borderColor: '#D1D4DC' },
             });
-
             chartApiRef.current = chart;
-
-            // Add the main candlestick series
-            const mainSeries = chart.addCandlestickSeries();
-            mainSeriesRef.current = mainSeries;
+            mainSeriesRef.current = chart.addCandlestickSeries();
         }
 
-        // Initialize MACD chart
-        if (showMacd && !macdChartRef.current && macdChartContainerRef.current) {
-            const macdChart = createChart(macdChartContainerRef.current, {
-                width: macdChartContainerRef.current.clientWidth,
-                height: 100,
-                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
-                rightPriceScale: { borderColor: '#D1D4DC' },
-                crosshair: { mode: CrosshairMode.Normal },
-                timeScale: {
-                    visible: true,
-                    borderColor: '#D1D4DC',
-                    timeVisible: true,
-                    secondsVisible: false,
-                },
-            });
-            macdChartRef.current = macdChart;
-            macdSeriesRef.current = macdChart.addLineSeries({
-                color: 'red',
-                lineWidth: 2,
-            });
-        }
-
-        // Initialize RSI chart
-        if (showRsi && !rsiChartRef.current && rsiChartContainerRef.current) {
-            const rsiChart = createChart(rsiChartContainerRef.current, {
-                width: rsiChartContainerRef.current.clientWidth,
-                height: 100,
-                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
-                rightPriceScale: { borderColor: '#D1D4DC' },
-                crosshair: { mode: CrosshairMode.Normal },
-                timeScale: {
-                    visible: true,
-                    borderColor: '#D1D4DC',
-                    timeVisible: true,
-                    secondsVisible: false,
-                },
-            });
-            rsiChartRef.current = rsiChart;
-            rsiSeriesRef.current = rsiChart.addLineSeries({
-                color: 'green',
-                lineWidth: 2,
-            });
-        }
-
-        // Initialize SMA chart
-        if (showSma && !smaChartRef.current && smaChartContainerRef.current) {
-            const smaChart = createChart(smaChartContainerRef.current, {
-                width: smaChartContainerRef.current.clientWidth,
-                height: 100,
-                layout: { background: { color: '#FFFFFF' }, textColor: '#000' },
-                rightPriceScale: { borderColor: '#D1D4DC' },
-                crosshair: { mode: CrosshairMode.Normal },
-                timeScale: {
-                    visible: true,
-                    borderColor: '#D1D4DC',
-                    timeVisible: true,
-                    secondsVisible: false,
-                },
-            });
-            smaChartRef.current = smaChart;
-            smaSeriesRef.current = smaChart.addLineSeries({
-                color: 'blue',
-                lineWidth: 2,
-            });
-        }
-
-        // Cleanup on unmount
+        // Cleanup function to remove the chart when the component unmounts
         return () => {
-            if (chartApiRef.current) {
-                chartApiRef.current.remove();
-                chartApiRef.current = null;
-            }
-            if (macdChartRef.current) {
-                macdChartRef.current.remove();
-                macdChartRef.current = null;
-            }
-            if (rsiChartRef.current) {
-                rsiChartRef.current.remove();
-                rsiChartRef.current = null;
-            }
-            if (smaChartRef.current) {
-                smaChartRef.current.remove();
-                smaChartRef.current = null;
-            }
+            chartApiRef.current?.remove();
+            chartApiRef.current = null;
         };
-    }, [showMacd, showRsi, showSma]);
-
-    // Update chart data when rawData changes
-    useEffect(() => {
-        if (!rawData || rawData.length === 0) return;
-
-        const sortedData = [...rawData].sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-
-        // Prepare candlestick data
-        const candlestickData: CandlestickData[] = sortedData.map((item) => ({
-            time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-        }));
-        mainSeriesRef.current?.setData(candlestickData);
-
-        // Set data for MACD chart
-        if (showMacd && macdSeriesRef.current) {
-            const macdData: LineData[] = sortedData
-                .filter(
-                    (item) =>
-                        item.macd !== undefined &&
-                        item.macd !== null &&
-                        !isNaN(item.macd as number)
-                )
-                .map((item) => ({
-                    time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
-                    value: item.macd as number,
-                }));
-            if (macdData.length > 0) {
-                macdSeriesRef.current.setData(macdData);
-            } else {
-                console.warn('No valid MACD data available.');
-            }
-        }
-
-        // Set data for RSI chart
-        if (showRsi && rsiSeriesRef.current) {
-            const rsiData: LineData[] = sortedData
-                .filter(
-                    (item) =>
-                        item.rsi !== undefined &&
-                        item.rsi !== null &&
-                        !isNaN(item.rsi as number)
-                )
-                .map((item) => ({
-                    time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
-                    value: item.rsi as number,
-                }));
-            if (rsiData.length > 0) {
-                rsiSeriesRef.current.setData(rsiData);
-            } else {
-                console.warn('No valid RSI data available.');
-            }
-        }
-
-        // Set data for SMA chart
-        if (showSma && smaSeriesRef.current) {
-            const smaData: LineData[] = sortedData
-                .filter(
-                    (item) =>
-                        item.sma !== undefined &&
-                        item.sma !== null &&
-                        !isNaN(item.sma as number)
-                )
-                .map((item) => ({
-                    time: format(parseISO(item.date), 'yyyy-MM-dd') as Time,
-                    value: item.sma as number,
-                }));
-            if (smaData.length > 0) {
-                smaSeriesRef.current.setData(smaData);
-            } else {
-                console.warn('No valid SMA data available.');
-            }
-        }
-
-        // Adjust time scale to fit content
-        chartApiRef.current?.timeScale().fitContent();
-        macdChartRef.current?.timeScale().fitContent();
-        rsiChartRef.current?.timeScale().fitContent();
-        smaChartRef.current?.timeScale().fitContent();
-
-        // Process trading signals
-        const signals: { type: 'buy' | 'sell'; date: string; price: number }[] = [];
-        let holding = false;
-
-        for (let i = 0; i < sortedData.length; i++) {
-            const item = sortedData[i];
-
-            // Buy Signal
-            let buySignal = false;
-
-            // Price Buy Condition
-            if (
-                priceBuyThreshold !== undefined &&
-                item.close <= priceBuyThreshold &&
-                !holding
-            ) {
-                buySignal = true;
-            }
-
-            // RSI Buy Condition
-            if (
-                rsiBuyThreshold !== undefined &&
-                item.rsi !== undefined &&
-                item.rsi <= rsiBuyThreshold &&
-                !holding
-            ) {
-                buySignal = true;
-            }
-
-            // SMA Buy Condition
-            if (
-                enableSmaBuy &&
-                item.sma !== undefined &&
-                item.close <= item.sma &&
-                !holding
-            ) {
-                buySignal = true;
-            }
-
-            // MACD Buy Condition
-            if (
-                enableMacdCrossovers &&
-                i > 0 &&
-                !holding &&
-                sortedData[i - 1].macd !== undefined &&
-                sortedData[i - 1].macdSignal !== undefined &&
-                item.macd !== undefined &&
-                item.macdSignal !== undefined &&
-                (sortedData[i - 1].macd as number) <= (sortedData[i - 1].macdSignal as number) &&
-                (item.macd as number) > (item.macdSignal as number)
-            ) {
-                buySignal = true;
-            }
-
-            if (buySignal) {
-                signals.push({ type: 'buy', date: item.date, price: item.close });
-                holding = true;
-                continue;
-            }
-
-            // Sell Signal
-            let sellSignal = false;
-
-            // Price Sell Condition
-            if (
-                priceSellThreshold !== undefined &&
-                item.close >= priceSellThreshold &&
-                holding
-            ) {
-                sellSignal = true;
-            }
-
-            // RSI Sell Condition
-            if (
-                rsiSellThreshold !== undefined &&
-                item.rsi !== undefined &&
-                item.rsi >= rsiSellThreshold &&
-                holding
-            ) {
-                sellSignal = true;
-            }
-
-            // SMA Sell Condition
-            if (
-                enableSmaSell &&
-                item.sma !== undefined &&
-                item.close >= item.sma &&
-                holding
-            ) {
-                sellSignal = true;
-            }
-
-            // MACD Sell Condition
-            if (
-                enableMacdCrossovers &&
-                i > 0 &&
-                holding &&
-                sortedData[i - 1].macd !== undefined &&
-                sortedData[i - 1].macdSignal !== undefined &&
-                item.macd !== undefined &&
-                item.macdSignal !== undefined &&
-                (sortedData[i - 1].macd as number) >= (sortedData[i - 1].macdSignal as number) &&
-                (item.macd as number) < (item.macdSignal as number)
-            ) {
-                sellSignal = true;
-            }
-
-            if (sellSignal) {
-                signals.push({ type: 'sell', date: item.date, price: item.close });
-                holding = false;
-            }
-        }
-
-        setTradeSignals(signals);
-
-        // Calculate Profit
-        let profit = 0;
-        for (let i = 0; i < signals.length - 1; i += 2) {
-            const buy = signals[i];
-            const sell = signals[i + 1];
-            let shares = tradeShares;
-
-            if (tradeAmountType === 'dollars') {
-                shares = tradeDollars / buy.price;
-            }
-
-            const tradeProfit = (sell.price - buy.price) * shares;
-            profit += tradeProfit;
-        }
-        setTotalProfit(profit);
-
-        // Add markers to the chart
-        if (signals.length > 0 && mainSeriesRef.current) {
-            const markers = signals.map((signal) => ({
-                time: format(parseISO(signal.date), 'yyyy-MM-dd') as Time,
-                position: signal.type === 'buy' ? 'belowBar' : 'aboveBar',
-                color: signal.type === 'buy' ? 'green' : 'red',
-                shape: signal.type === 'buy' ? 'arrowUp' : 'arrowDown',
-                text: signal.type.toUpperCase(),
-            }));
-            mainSeriesRef.current.setMarkers(markers);
-        }
-    }, [
-        rawData,
-        priceBuyThreshold,
-        priceSellThreshold,
-        rsiBuyThreshold,
-        rsiSellThreshold,
-        enableMacdCrossovers,
-        enableSmaBuy,
-        enableSmaSell,
-        tradeAmountType,
-        tradeShares,
-        tradeDollars,
-    ]);
-
-    // Update chart size on window resize
-    useEffect(() => {
-        const handleResize = () => {
-            if (chartContainerRef.current && chartApiRef.current) {
-                chartApiRef.current.applyOptions({
-                    width: chartContainerRef.current.clientWidth,
-                });
-            }
-            if (macdChartContainerRef.current && macdChartRef.current) {
-                macdChartRef.current.applyOptions({
-                    width: macdChartContainerRef.current.clientWidth,
-                });
-            }
-            if (rsiChartContainerRef.current && rsiChartRef.current) {
-                rsiChartRef.current.applyOptions({
-                    width: rsiChartContainerRef.current.clientWidth,
-                });
-            }
-            if (smaChartContainerRef.current && smaChartRef.current) {
-                smaChartRef.current.applyOptions({
-                    width: smaChartContainerRef.current.clientWidth,
-                });
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Handle the submission of the stock symbol form
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setCurrentStockSymbol(stockSymbolInput);
-        setRawData([]); // Reset data when symbol changes
+    // Effect to update the chart data whenever rawData changes
+    useEffect(() => {
+        if (chartApiRef.current && mainSeriesRef.current && rawData.length > 0) {
+            const candlestickData: CandlestickData[] = rawData.map((item) => ({
+                time: format(parseISO(item.date), 'yyyy-MM-dd'),
+                open: item.open,
+                high: item.high,
+                low: item.low,
+                close: item.close,
+            }));
+            console.log('Setting Candlestick Data:', candlestickData);
+            mainSeriesRef.current.setData(candlestickData);
+            chartApiRef.current.timeScale().fitContent();
+        } else {
+            console.warn('No candlestick data to set or chart not initialized');
+        }
+    }, [rawData]);
+
+    // handler to toggle visibility of technical indicators
+    const handleIndicatorChange = (indicator: 'macd' | 'rsi' | 'sma', value: boolean) => {
+        setShowIndicators((prevState) => ({
+            ...prevState,
+            [indicator]: value,
+        }));
     };
-
-    // Handle notification form submission
-    const handleNotificationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-
-        // Validation: At least one contact method must be provided
-        if (!email && !phoneNumber) {
-            alert('Please enter at least an email address or phone number.');
-            return;
-        }
-
-        // Fetch existing notifications before creating a new subscription
-        //await fetchExistingNotifications();
-
-        if (isNaN(parseFloat(notificationThreshold))) {
-            alert('Please enter a valid number for the threshold.');
-            return;
-        }
-
-        // Create the notification after fetching existing ones
-        const notificationData = {
-            email: email || null,
-            phoneNumber: phoneNumber || null,
-            indicator: notificationIndicator,
-            stockSymbol: currentStockSymbol,
-            threshold: parseFloat(notificationThreshold),
-            condition: notificationCondition,
-        };
-
-        console.log("notificationData", notificationData);
-
-        if (!notificationData.email && !notificationData.phoneNumber) {
-            alert("Please enter at least an email address or phone number.");
-            return;
-        }
-
-        try {
-            await axios.post('http://localhost:7086/notifications', notificationData);
-            alert('Notification subscription created successfully!');
-            // Clear the form
-            setEmail('');
-            setPhoneNumber('');
-            setNotificationIndicator('');
-            setNotificationThreshold('');
-            setNotificationCondition('Above');
-        } catch (error) {
-            console.log(error);
-            console.error('Error creating notification:', error);
-            alert('Failed to create notification subscription. Please try again.');
-        }
-    };
-
-    // Function to fetch existing notifications
-    //const fetchExistingNotifications = async () => {
-    //    try {
-    //        let response = null;
-
-    //        if (email) {
-    //            response = await axios.get(
-    //                `http://localhost:7086/notifications/email/${encodeURIComponent(email)}`
-    //            );
-    //        } else if (phoneNumber) {
-    //            response = await axios.get(
-    //                `http://localhost:7086/notifications/phone/${encodeURIComponent(phoneNumber)}`
-    //            );
-    //        } else {
-    //            return; // No contact info provided
-    //        }
-
-    //        setExistingNotifications(response.data);
-    //    } catch (error) {
-    //        console.error('Error fetching notifications:', error);
-    //        alert('Failed to fetch notifications. Please try again.');
-    //    }
-    //};
-
-    //const handleDeleteNotification = async (id) => {
-    //    try {
-    //        await axios.delete(`http://localhost:7086/notifications/${id}`);
-    //        alert('Notification deleted successfully.');
-    //        // Refresh the list
-    //        fetchExistingNotifications();
-    //    } catch (error) {
-    //        console.error('Error deleting notification:', error);
-    //        alert('Failed to delete notification. Please try again.');
-    //    }
-    //};
 
     return (
         <div className="chart-component">
-            {/* Main Chart Container */}
-            <div className="chart-container" style={{ position: 'relative' }}>
-                <div
-                    ref={chartContainerRef}
-                    className="tv-chart"
-                    style={{ width: '100%', height: '100%' }}
-                />
-                {/* Loading Overlay */}
-                {loading && (
-                    <div className="chart-loading-overlay">
-                        Loading chart...
-                    </div>
-                )}
-            </div>
+            <div
+                className="chart-container"
+                ref={chartContainerRef}
+                style={{ width: '100%', height: '500px' }}
+            ></div>
 
-            {/* MACD Chart */}
-            {showMacd && (
-                <div className="indicator-chart-container" style={{ position: 'relative' }}>
-                    <div
-                        ref={macdChartContainerRef}
-                        className="tv-chart"
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                </div>
-            )}
+            {/* If loading, just show Loading... */}
+            {loading && <div className="loading-overlay">Loading...</div>}
 
-            {/* RSI Chart */}
-            {showRsi && (
-                <div className="indicator-chart-container" style={{ position: 'relative' }}>
-                    <div
-                        ref={rsiChartContainerRef}
-                        className="tv-chart"
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                </div>
-            )}
-
-            {/* SMA Chart */}
-            {showSma && (
-                <div className="indicator-chart-container" style={{ position: 'relative' }}>
-                    <div
-                        ref={smaChartContainerRef}
-                        className="tv-chart"
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                </div>
-            )}
-
-            {/* Controls Below the Chart */}
-            <div className="chart-controls">
-                {/* Stock Selector Form */}
-                <form onSubmit={handleSubmit} className="stock-selector-form">
-                    <label>
-                        Stock Symbol:
-                        <input
-                            type="text"
-                            value={stockSymbolInput}
-                            onChange={(e) => setStockSymbolInput(e.target.value.toUpperCase())}
-                        />
-                    </label>
-                    <button type="submit">Submit</button>
-                </form>
-
-                {/* Time Frame Selection */}
-                <div className="time-frame-buttons">
-                    {timeFrames.map((frame) => (
-                        <button
-                            key={frame.label}
-                            onClick={() => setSelectedTimeFrame(frame.value)}
-                            className={selectedTimeFrame === frame.value ? 'active' : ''}
-                        >
-                            {frame.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Add and Remove Chart Buttons */}
-                <div className="chart-buttons">
-                    <button onClick={() => addChart(currentStockSymbol)}>
-                        Add Another {currentStockSymbol.toUpperCase()} Chart
+            {/* Time Frame Selection */}
+            <div className="timeframes-section">
+                {timeFrames.map((frame) => (
+                    <button
+                        key={frame.label}
+                        className={selectedTimeFrame === frame.value ? 'active' : ''}
+                        onClick={() => setSelectedTimeFrame(frame.value)}
+                    >
+                        {frame.label}
                     </button>
-                    <button onClick={() => removeChart(chartId)}>Remove Chart</button>
-                </div>
+                ))}
             </div>
 
-            {/* Technical Indicators Checkboxes */}
-            <div className="checkbox-container">
-                <label className="checkbox-label">
+            {/* Indicator Selection */}
+            <div className="indicator-selection">
+                <label>
                     <input
                         type="checkbox"
-                        checked={showMacd}
-                        onChange={(e) => setShowMacd(e.target.checked)}
+                        checked={showIndicators.macd}
+                        onChange={(e) => handleIndicatorChange('macd', e.target.checked)}
                     />
-                    <span>MACD</span>
+                    MACD
                 </label>
-                <label className="checkbox-label">
+                <label>
                     <input
                         type="checkbox"
-                        checked={showRsi}
-                        onChange={(e) => setShowRsi(e.target.checked)}
+                        checked={showIndicators.rsi}
+                        onChange={(e) => handleIndicatorChange('rsi', e.target.checked)}
                     />
-                    <span>RSI</span>
+                    RSI
                 </label>
-                <label className="checkbox-label">
+                <label>
                     <input
                         type="checkbox"
-                        checked={showSma}
-                        onChange={(e) => setShowSma(e.target.checked)}
+                        checked={showIndicators.sma}
+                        onChange={(e) => handleIndicatorChange('sma', e.target.checked)}
                     />
-                    <span>Moving Average</span>
+                    SMA
                 </label>
             </div>
 
-            {/* Trading Parameters */}
-            <div className="trading-parameters">
-                <h3>Set Trading Parameters</h3>
-                <table className="parameters-table">
-                    <thead>
-                        <tr>
-                            <th>Indicator</th>
-                            <th>Buy Parameter</th>
-                            <th>Sell Parameter</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {/* Price Parameters */}
-                        <tr>
-                            <td>Price</td>
-                            <td>
-                                <input
-                                    type="number"
-                                    placeholder="Buy Price"
-                                    value={priceBuyThreshold || ''}
-                                    onChange={(e) =>
-                                        setPriceBuyThreshold(parseFloat(e.target.value))
-                                    }
-                                />
-                            </td>
-                            <td>
-                                <input
-                                    type="number"
-                                    placeholder="Sell Price"
-                                    value={priceSellThreshold || ''}
-                                    onChange={(e) =>
-                                        setPriceSellThreshold(parseFloat(e.target.value))
-                                    }
-                                />
-                            </td>
-                        </tr>
-                        {/* RSI Parameters */}
-                        <tr>
-                            <td>RSI</td>
-                            <td>
-                                <input
-                                    type="number"
-                                    placeholder="Buy when RSI <"
-                                    value={rsiBuyThreshold || ''}
-                                    onChange={(e) =>
-                                        setRsiBuyThreshold(parseFloat(e.target.value))
-                                    }
-                                />
-                            </td>
-                            <td>
-                                <input
-                                    type="number"
-                                    placeholder="Sell when RSI >"
-                                    value={rsiSellThreshold || ''}
-                                    onChange={(e) =>
-                                        setRsiSellThreshold(parseFloat(e.target.value))
-                                    }
-                                />
-                            </td>
-                        </tr>
-                        {/* MACD Parameters */}
-                        <tr>
-                            <td>MACD Crossovers</td>
-                            <td>
-                                <input
-                                    type="checkbox"
-                                    checked={enableMacdCrossovers}
-                                    onChange={(e) => setEnableMacdCrossovers(e.target.checked)}
-                                />
-                                <span>Enable</span>
-                            </td>
-                            <td></td>
-                        </tr>
-                        {/* SMA Parameters */}
-                        <tr>
-                            <td>SMA</td>
-                            <td>
-                                <input
-                                    type="checkbox"
-                                    checked={enableSmaBuy}
-                                    onChange={(e) => setEnableSmaBuy(e.target.checked)}
-                                />
-                                <span>Buy when Price &lt; SMA</span>
-                            </td>
-                            <td>
-                                <input
-                                    type="checkbox"
-                                    checked={enableSmaSell}
-                                    onChange={(e) => setEnableSmaSell(e.target.checked)}
-                                />
-                                <span>Sell when Price &gt; SMA</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            {/* Render Technical Indicators if selected */}
+            {showIndicators.macd && macdData.length > 0 && (
+                <IndicatorComponent data={macdData} type="MACD" />
+            )}
+            {showIndicators.rsi && rsiData.length > 0 && (
+                <IndicatorComponent data={rsiData} type="RSI" />
+            )}
+            {showIndicators.sma && smaData.length > 0 && (
+                <IndicatorComponent data={smaData} type="SMA" />
+            )}
 
-                {/* Trade Amount Settings */}
-                <div className="trade-amount-settings">
-                    <h4>Trade Amount</h4>
-                    <label>
-                        <input
-                            type="radio"
-                            name="tradeAmountType"
-                            value="shares"
-                            checked={tradeAmountType === 'shares'}
-                            onChange={() => setTradeAmountType('shares')}
-                        />
-                        Number of Shares:
-                        <input
-                            type="number"
-                            value={tradeShares}
-                            onChange={(e) => setTradeShares(parseFloat(e.target.value))}
-                            disabled={tradeAmountType !== 'shares'}
-                        />
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            name="tradeAmountType"
-                            value="dollars"
-                            checked={tradeAmountType === 'dollars'}
-                            onChange={() => setTradeAmountType('dollars')}
-                        />
-                        Dollar Amount ($):
-                        <input
-                            type="number"
-                            value={tradeDollars}
-                            onChange={(e) => setTradeDollars(parseFloat(e.target.value))}
-                            disabled={tradeAmountType !== 'dollars'}
-                        />
-                    </label>
-                </div>
-            </div>
+            {/* Trade Parameters Component */}
+            <TradeParametersComponent onParametersChange={handleParametersChange} />
 
-            {/* Trade Signals Table */}
-            <div className="trade-signals">
-                <h3>Trade Signals</h3>
-                {tradeSignals.length > 0 ? (
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Date</th>
-                                <th>Price</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {tradeSignals.map((signal, index) => (
-                                <tr key={index}>
-                                    <td>{signal.type.toUpperCase()}</td>
-                                    <td>{signal.date}</td>
-                                    <td>{signal.price.toFixed(2)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <p>No trade signals generated.</p>
-                )}
-            </div>
+            {/* Profit Display Component */}
+            <ProfitDisplayComponent
+                indicatorData={{ MACD: macdData, RSI: rsiData, SMA: smaData }}
+                tradeParameters={tradeParameters}
+                rawData={rawData}
+            />
 
-            {/* Profit Display */}
-            <div className="profit-display">
-                <h3>Total Profit: ${totalProfit.toFixed(2)}</h3>
-            </div>
-
-            {/* Notifications */}
-            <div className="notification-form">
-                <h3>Set Up Notifications</h3>
-                <form onSubmit={handleNotificationSubmit}>
-                    <label>
-                        Email Address:
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </label>
-                    <label>
-                        Phone Number:
-                        <input
-                            type="tel"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                        />
-                    </label>
-                    <p>Please enter at least an email address or phone number.</p>
-                    <label>
-                        Indicator:
-                        <select
-                            value={notificationIndicator}
-                            onChange={(e) => setNotificationIndicator(e.target.value)}
-                            required
-                        >
-                            <option value="">Select Indicator</option>
-                            <option value="Price">Price</option>
-                            <option value="RSI">RSI</option>
-                            <option value="MACD">MACD</option>
-                            <option value="SMA">SMA</option>
-                        </select>
-                    </label>
-                    <label>
-                        Threshold:
-                        <input
-                            type="number"
-                            value={notificationThreshold}
-                            onChange={(e) => setNotificationThreshold(e.target.value)}
-                            required
-                        />
-                    </label>
-                    <label>
-                        Condition:
-                        <select
-                            value={notificationCondition}
-                            onChange={(e) => setNotificationCondition(e.target.value)}
-                            required
-                        >
-                            <option value="Above">Above</option>
-                            <option value="Below">Below</option>
-                        </select>
-                    </label>
-                    <button type="submit">Subscribe</button>
-                </form>
-            </div>
+            {/* Notifications Component */}
+            <NotificationsComponent stockSymbol={stockSymbol} />
         </div>
     );
 };

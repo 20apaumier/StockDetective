@@ -1,106 +1,43 @@
-/* Main container for the chart and controls */
+/* Main Chart */
 .chart-component {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
 }
 
-/* Chart container */
 .chart-container {
-    position: relative;
     width: 100%;
-    height: 500px;
+    max-width: 800px;
+    margin-bottom: 30px;
+}
+
+/* Timeframes for stock */
+.timeframes-section {
     margin-bottom: 20px;
 }
 
-/* Controls below the chart */
-.chart-controls {
+.timeframes-buttons {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px; /* Add margin to separate from the next section */
+    gap: 10px;
 }
 
-.indicator-chart-container {
-    position: relative;
-    width: 100%;
-    height: 150px;
-    margin-top: 10px;
+.timeframes-buttons button {
+    padding: 8px 12px;
 }
 
-.chart-loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    z-index: 3;
+/* Style active button blue */
+.timeframes-buttons button.active {
+    background-color: #007bff;
+    color: #fff;
 }
-
-.chart-controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-/* Stock selector form */
-.stock-selector-form {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-right: 20px;
-    margin-bottom: 10px; /* Add bottom margin */
-}
-
-    .stock-selector-form label {
-        display: flex;
-        align-items: center;
-        margin-right: 10px;
-        margin-top: 5px;
-    }
-
-    .stock-selector-form input[type="text"],
-    .stock-selector-form input[type="date"] {
-        margin-left: 5px;
-        padding: 5px;
-        font-size: 14px;
-    }
-
-    .stock-selector-form button {
-        margin-left: 10px;
-        padding: 5px 10px;
-        font-size: 14px;
-        margin-top: 5px;
-    }
-
-/* Chart buttons */
-.chart-buttons {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px; /* Add bottom margin */
-}
-
-    .chart-buttons button {
-        margin-right: 10px;
-        padding: 5px 10px;
-        font-size: 14px;
-    }
 
 /* Technical indicators checkboxes */
 .checkbox-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    margin-bottom: 20px; /* Add bottom margin */
+    margin-bottom: 20px;
 }
 
 .checkbox-label {
@@ -108,13 +45,15 @@
     font-size: 14px;
     display: flex;
     align-items: center;
-    margin-bottom: 10px; /* Add bottom margin for small screens */
+    margin-bottom: 10px;
 }
 
-    .checkbox-label input[type="checkbox"] {
-        margin-right: 5px;
-    }
+.checkbox-label input[type="checkbox"] {
+    margin-right: 5px;
+}
 
+
+/* Trading Parameters table */
 .trading-parameters {
     margin: 20px 0;
     width: 100%;
@@ -125,39 +64,59 @@
     border-collapse: collapse;
 }
 
-    .parameters-table th,
-    .parameters-table td {
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: center;
-    }
+.parameters-table th,
+.parameters-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
 
 .trade-amount-settings {
     margin-top: 20px;
 }
 
-    .trade-amount-settings label {
-        display: block;
-        margin-bottom: 10px;
-    }
+.trade-amount-settings label {
+    display: block;
+    margin-bottom: 10px;
+}
 
-    .trade-amount-settings input[type="number"] {
-        margin-left: 10px;
-    }
+.trade-amount-settings input[type="number"] {
+    margin-left: 10px;
+}
 
 .trade-signals {
     margin: 20px 0;
     width: 100%;
 }
 
-    .trade-signals table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+.trade-signals table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-    .trade-signals th,
-    .trade-signals td {
-        border: 1px solid #ccc;
-        padding: 8px;
-        text-align: center;
-    }
+.trade-signals th,
+.trade-signals td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+.indicators-section {
+    margin-bottom: 20px;
+}
+
+.indicators-checkboxes label {
+    margin-right: 15px;
+}
+
+.indicators-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Trade parameters and notification form */
+.trade-parameters,
+.notification-form {
+    width: 100%;
+}
