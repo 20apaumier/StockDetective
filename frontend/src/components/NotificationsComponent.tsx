@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+// stock symbol for which the notification is set
 interface NotificationsProps {
     stockSymbol: string;
 }
 
+// all possible indicators (for now)
 type IndicatorType = 'Price' | 'RSI' | 'MACD' | 'SMA';
 
 interface NotificationData {
@@ -18,6 +20,7 @@ interface NotificationData {
 }
 
 const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) => {
+    // states for the form fields
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [indicator, setIndicator] = useState<IndicatorType>('Price');
@@ -27,14 +30,26 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
         null
     );
 
+    // Helper function to reset form fields after successful submission
+    const resetForm = () => {
+        setEmail('');
+        setPhoneNumber('');
+        setIndicator('Price');
+        setThreshold('');
+        setCondition('Above');
+    };
+
+    // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Validation for email or phone number
         if (!email && !phoneNumber) {
             setMessage({ type: 'error', text: 'Please provide either an email or phone number.' });
             return;
         }
 
+        // Validation for threshold
         if (threshold === '' || isNaN(Number(threshold))) {
             setMessage({ type: 'error', text: 'Please enter a valid threshold value.' });
             return;
@@ -45,25 +60,18 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
             phoneNumber: phoneNumber || null,
             indicator,
             stockSymbol,
-            threshold: Number(threshold),
+            threshold: Number(threshold), // Ensure threshold is a number
             condition,
         };
 
+        // API call to create notification
         try {
             await axios.post('http://localhost:7086/notifications', notificationData);
             setMessage({ type: 'success', text: 'Notification successfully created!' });
-            // Reset form fields
-            setEmail('');
-            setPhoneNumber('');
-            setIndicator('Price');
-            setThreshold('');
-            setCondition('Above');
+            resetForm(); // Reset the form after successful submission
         } catch (error) {
             console.error('Error creating notification:', error);
-            setMessage({
-                type: 'error',
-                text: 'Failed to create notification. Please try again.',
-            });
+            setMessage({ type: 'error', text: 'Failed to create notification. Please try again.' });
         }
     };
 
@@ -71,6 +79,7 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
         <div className="notification-form">
             <h3>Set Up Notifications for {stockSymbol.toUpperCase()}</h3>
             <form onSubmit={handleSubmit}>
+                {/* Email Input */}
                 <label htmlFor="email">
                     Email Address:
                     <input
@@ -80,6 +89,8 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </label>
+
+                {/* Phone Number Input */}
                 <label htmlFor="phoneNumber">
                     Phone Number:
                     <input
@@ -91,6 +102,7 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
                 </label>
                 <p>Please enter at least an email address or phone number.</p>
 
+                {/* Indicator Selection */}
                 <label htmlFor="indicator">
                     Indicator:
                     <select
@@ -105,6 +117,8 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
                         <option value="SMA">SMA</option>
                     </select>
                 </label>
+
+                {/* Threshold Input */}
                 <label htmlFor="threshold">
                     Threshold:
                     <input
@@ -115,6 +129,8 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
                         required
                     />
                 </label>
+
+                {/* Condition Selection */}
                 <label htmlFor="condition">
                     Condition:
                     <select
@@ -127,8 +143,12 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
                         <option value="Below">Below</option>
                     </select>
                 </label>
+
+                {/* Submit Button */}
                 <button type="submit">Subscribe</button>
             </form>
+
+            {/* Display Message */}
             {message && (
                 <p className={message.type === 'success' ? 'success-message' : 'error-message'}>
                     {message.text}

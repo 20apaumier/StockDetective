@@ -1,6 +1,7 @@
 // TradeParametersComponent.tsx
 import React, { useState, useEffect } from 'react';
 
+// Define the shape of the trade parameters for each indicator
 export interface TradeParameters {
     [indicator: string]: {
         buyThreshold: number;
@@ -13,17 +14,20 @@ export interface TradeParameters {
 }
 
 interface TradeParametersComponentProps {
+    // Callback to notify parent component of parameter changes
     onParametersChange: (params: TradeParameters) => void;
 }
 
 const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
     onParametersChange,
 }) => {
+    // List of indicators to show in the UI
     const indicators = ['MACD', 'RSI', 'SMA']; // Add more indicators as needed
 
+    // State to store the trade parameters for each indicator
     const [parameters, setParameters] = useState<TradeParameters>({});
 
-    // Initialize parameters
+    // Initialize parameters for each indicator when the component mounts
     useEffect(() => {
         const initialParams: TradeParameters = {};
         indicators.forEach((indicator) => {
@@ -39,25 +43,25 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
         setParameters(initialParams);
     }, []);
 
-    // Handle input changes
+    // Handle changes to input fields and update the corresponding parameter
     const handleInputChange = (
         indicator: string,
         field: keyof TradeParameters[string],
         value: string | number
     ) => {
         setParameters((prev) => ({
-            ...prev,
+            ...prev, // Spread the existing parameters
             [indicator]: {
-                ...prev[indicator],
+                ...prev[indicator], // Update only the specific indicator's field
                 [field]: value,
             },
         }));
     };
 
-    // Notify parent component when parameters change
+    // Notify parent component when trade parameters change
     useEffect(() => {
         if (typeof onParametersChange === 'function') {
-            onParametersChange(parameters);
+            onParametersChange(parameters); // Call the callback with the updated parameters
         } else {
             console.error('onParametersChange is not a function');
         }
@@ -79,9 +83,11 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                     </tr>
                 </thead>
                 <tbody>
+                    {/* Loop through each indicator and render the respective controls */}
                     {indicators.map((indicator) => (
                         <tr key={indicator}>
                             <td>{indicator}</td>
+                            {/* Buy Condition Dropdown */}
                             <td>
                                 <select
                                     value={parameters[indicator]?.buyCondition || '<'}
@@ -97,6 +103,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                     <option value=">">Greater Than</option>
                                 </select>
                             </td>
+                            {/* Buy Threshold Input */}
                             <td>
                                 <input
                                     type="number"
@@ -110,6 +117,8 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                     }
                                 />
                             </td>
+
+                            {/* Sell Condition Dropdown */}
                             <td>
                                 <select
                                     value={parameters[indicator]?.sellCondition || '>'}
@@ -125,6 +134,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                     <option value=">">Greater Than</option>
                                 </select>
                             </td>
+                            {/* Sell Threshold Input */}
                             <td>
                                 <input
                                     type="number"
@@ -138,6 +148,8 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                     }
                                 />
                             </td>
+
+                            {/* Trade Amount Input */}
                             <td>
                                 <input
                                     type="number"
@@ -151,6 +163,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                     }
                                 />
                             </td>
+                            {/* Trade Amount Type Dropdown */}
                             <td>
                                 <select
                                     value={parameters[indicator]?.tradeAmountType || 'shares'}

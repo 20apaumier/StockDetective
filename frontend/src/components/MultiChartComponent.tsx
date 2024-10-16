@@ -1,31 +1,35 @@
-// MultiChartComponent.tsx
 import React, { useState } from 'react';
 import ChartComponent from './ChartComponent';
 import './MultiChartComponent.css';
 
+// interface for chart configuration
 interface ChartConfig {
     id: number;
     stockSymbol: string;
 }
 
 const MultiChartComponent: React.FC = () => {
-    // State to manage the list of charts with their configurations
+    // State to store all chart configurations
     const [charts, setCharts] = useState<ChartConfig[]>([
-        { id: 0, stockSymbol: 'AAPL' }, // Default chart with 'AAPL'
+        { id: 0, stockSymbol: 'AAPL' }, // Default chart with Apple
     ]);
 
+    // state to handle the input for adding new charts
     const [newStockSymbol, setNewStockSymbol] = useState('');
 
-    // Function to add a new chart
+    // Function to add a new chart to the list
     const addChart = (stockSymbol: string) => {
+        // prevent adding an empty or invalid stock symbol
         if (stockSymbol.trim() === '') {
-            alert('Please enter a stock symbol');
+            alert('Please enter a valid stock symbol');
             return;
         }
 
+        // update the chart list with a new chart config
         setCharts((prevCharts) => [
             ...prevCharts,
             {
+                // generate a new ID and make stockSymbol uppercase
                 id: prevCharts.length > 0 ? prevCharts[prevCharts.length - 1].id + 1 : 0,
                 stockSymbol: stockSymbol.trim().toUpperCase(),
             },
@@ -36,7 +40,7 @@ const MultiChartComponent: React.FC = () => {
     const handleAddChart = () => {
         if (newStockSymbol.trim() !== '') {
             addChart(newStockSymbol.trim().toUpperCase());
-            setNewStockSymbol('');
+            setNewStockSymbol(''); // reset input field
         } else {
             alert('Please enter a stock symbol');
         }
@@ -44,10 +48,12 @@ const MultiChartComponent: React.FC = () => {
 
     // Function to remove a chart
     const removeChart = (id: number) => {
+        // prevent removal if last chart
         if (charts.length <= 1) {
             alert('Cannot remove the last chart');
             return;
         }
+        // remove the chart with the matching id
         setCharts((prevCharts) => prevCharts.filter((chart) => chart.id !== id));
     };
 
@@ -64,6 +70,7 @@ const MultiChartComponent: React.FC = () => {
                 <button onClick={handleAddChart}>Add Chart</button>
             </div>
 
+            {/* Display message to refresh if no charts are available */}
             {charts.length === 0 ? (
                 <p>No charts available. Refresh the page to load the default chart.</p>
             ) : (
