@@ -8,12 +8,14 @@ interface IndicatorComponentProps {
 }
 
 const IndicatorComponent: React.FC<IndicatorComponentProps> = ({ data, type }) => {
+    // references for chart container, chart api, series api
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartApiRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<'Line'> | null>(null);
 
-    // Initialize chart on mount
+    // Effect to initialize and update the chart
     useEffect(() => {
+        // only create the chart if the container exists and there's data
         if (chartContainerRef.current && data.length > 0) {
             const chart = createChart(chartContainerRef.current, {
                 width: chartContainerRef.current.clientWidth || 600,
@@ -22,24 +24,27 @@ const IndicatorComponent: React.FC<IndicatorComponentProps> = ({ data, type }) =
                 rightPriceScale: { borderColor: '#D1D4DC' },
                 timeScale: { borderColor: '#D1D4DC' },
             });
-
             chartApiRef.current = chart;
+
+            // add the line series with color based on indicator type
             seriesRef.current = chart.addLineSeries({
                 color: type === 'MACD' ? 'red' : type === 'RSI' ? 'green' : 'blue',
                 lineWidth: 2,
             });
 
-            // Set the data
+            // Set the chart data
             seriesRef.current.setData(data);
+
+            // adjust chart to fit all data points
             chartApiRef.current.timeScale().fitContent();
         }
 
-        // Cleanup function
+        // Cleanup chart when the component unmounts or data changes
         return () => {
             chartApiRef.current?.remove();
             chartApiRef.current = null;
         };
-    }, [data]);
+    }, [data, type]); // chart updates on data or type changes
 
     // Render nothing if there's no data
     if (data.length === 0) {
