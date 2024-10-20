@@ -1,11 +1,7 @@
-// src/tests/ProfitDisplayComponent.test.tsx
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import ProfitDisplayComponent from '../components/ProfitDisplayComponent';
 import { LineData, StockDataItem } from '../types';
-import userEvent from '@testing-library/user-event';
-import { formatDate } from '../utils';
 
 // Mock the formatDate function to return the date as is
 jest.mock('../utils', () => ({
