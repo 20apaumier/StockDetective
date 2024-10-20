@@ -56,6 +56,7 @@ const IndicatorComponent: React.FC<IndicatorComponentProps> = ({ data, type }) =
             className="indicator-container"
             ref={chartContainerRef}
             style={{ width: '100%', height: '150px' }}
+            data-testid="indicator-chart" // Added data-testid here
         ></div>
     );
 };

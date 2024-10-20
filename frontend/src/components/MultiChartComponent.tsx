@@ -19,31 +19,28 @@ const MultiChartComponent: React.FC = () => {
 
     // Function to add a new chart to the list
     const addChart = (stockSymbol: string) => {
-        // prevent adding an empty or invalid stock symbol
-        if (stockSymbol.trim() === '') {
+        const trimmedSymbol = stockSymbol.trim().toUpperCase();
+        // Prevent adding an empty or invalid stock symbol
+        if (trimmedSymbol === '') {
             alert('Please enter a valid stock symbol');
             return;
         }
 
-        // update the chart list with a new chart config
+        // Update the chart list with a new chart config
         setCharts((prevCharts) => [
             ...prevCharts,
             {
-                // generate a new ID and make stockSymbol uppercase
+                // Generate a new ID and make stockSymbol uppercase
                 id: prevCharts.length > 0 ? prevCharts[prevCharts.length - 1].id + 1 : 0,
-                stockSymbol: stockSymbol.trim().toUpperCase(),
+                stockSymbol: trimmedSymbol,
             },
         ]);
     };
 
     // Function to handle adding a chart with user input
     const handleAddChart = () => {
-        if (newStockSymbol.trim() !== '') {
-            addChart(newStockSymbol.trim().toUpperCase());
-            setNewStockSymbol(''); // reset input field
-        } else {
-            alert('Please enter a stock symbol');
-        }
+        addChart(newStockSymbol); // Let addChart handle validation
+        setNewStockSymbol(''); // Reset input field regardless of outcome
     };
 
     // Function to remove a chart
@@ -65,7 +62,7 @@ const MultiChartComponent: React.FC = () => {
                     type="text"
                     placeholder="Enter Stock Symbol"
                     value={newStockSymbol}
-                    onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())}
+                    onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())} // Ensure uppercase input
                 />
                 <button onClick={handleAddChart}>Add Chart</button>
             </div>
@@ -76,7 +73,7 @@ const MultiChartComponent: React.FC = () => {
             ) : (
                 charts.map((chart) => (
                     <div key={chart.id} className="chart-wrapper">
-                        <h2>{chart.stockSymbol.toUpperCase()} Chart</h2>
+                        <h2>{chart.stockSymbol} Chart</h2>
 
                         {/* Chart Component */}
                         <ChartComponent
