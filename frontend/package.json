@@ -17,6 +17,7 @@
     "@reduxjs/toolkit": "^2.2.7",
     "@types/react-datepicker": "^6.2.0",
     "axios": "^1.7.7",
+    "axios-mock-adapter": "^2.1.0",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
     "lightweight-charts": "^4.2.1",
