@@ -1,4 +1,4 @@
-// TradeParametersComponent.tsx
+// src/components/TradeParametersComponent.tsx
 import React, { useState, useEffect } from 'react';
 
 // Define the shape of the trade parameters for each indicator
@@ -24,24 +24,21 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
     // List of indicators to show in the UI
     const indicators = ['MACD', 'RSI', 'SMA']; // Add more indicators as needed
 
-    // State to store the trade parameters for each indicator
-    const [parameters, setParameters] = useState<TradeParameters>({});
+    // Initialize parameters for each indicator directly in useState
+    const initialParams: TradeParameters = {};
+    indicators.forEach((indicator) => {
+        initialParams[indicator] = {
+            buyThreshold: 0,
+            buyCondition: '<',
+            sellThreshold: 0,
+            sellCondition: '>',
+            tradeAmount: 0,
+            tradeAmountType: 'shares',
+        };
+    });
 
-    // Initialize parameters for each indicator when the component mounts
-    useEffect(() => {
-        const initialParams: TradeParameters = {};
-        indicators.forEach((indicator) => {
-            initialParams[indicator] = {
-                buyThreshold: 0,
-                buyCondition: '<',
-                sellThreshold: 0,
-                sellCondition: '>',
-                tradeAmount: 0,
-                tradeAmountType: 'shares',
-            };
-        });
-        setParameters(initialParams);
-    }, []);
+    // State to store the trade parameters for each indicator
+    const [parameters, setParameters] = useState<TradeParameters>(initialParams);
 
     // Handle changes to input fields and update the corresponding parameter
     const handleInputChange = (
@@ -49,11 +46,24 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
         field: keyof TradeParameters[string],
         value: string | number
     ) => {
+        let newValue: number | string;
+
+        if (field === 'buyThreshold' || field === 'sellThreshold' || field === 'tradeAmount') {
+            if (typeof value === 'string') {
+                const parsed = parseFloat(value);
+                newValue = isNaN(parsed) ? 0 : parsed;
+            } else {
+                newValue = value;
+            }
+        } else {
+            newValue = value;
+        }
+
         setParameters((prev) => ({
             ...prev, // Spread the existing parameters
             [indicator]: {
                 ...prev[indicator], // Update only the specific indicator's field
-                [field]: value,
+                [field]: newValue,
             },
         }));
     };
@@ -90,7 +100,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                             {/* Buy Condition Dropdown */}
                             <td>
                                 <select
-                                    value={parameters[indicator]?.buyCondition || '<'}
+                                    value={parameters[indicator].buyCondition}
                                     onChange={(e) =>
                                         handleInputChange(
                                             indicator,
@@ -98,6 +108,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                             e.target.value as '<' | '>'
                                         )
                                     }
+                                    aria-label={`${indicator} Buy Condition`}
                                 >
                                     <option value="<">Less Than</option>
                                     <option value=">">Greater Than</option>
@@ -107,21 +118,22 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                             <td>
                                 <input
                                     type="number"
-                                    value={parameters[indicator]?.buyThreshold || ''}
+                                    value={parameters[indicator].buyThreshold}
                                     onChange={(e) =>
                                         handleInputChange(
                                             indicator,
                                             'buyThreshold',
-                                            parseFloat(e.target.value)
+                                            e.target.value
                                         )
                                     }
+                                    aria-label={`${indicator} Buy Threshold`}
                                 />
                             </td>
 
                             {/* Sell Condition Dropdown */}
                             <td>
                                 <select
-                                    value={parameters[indicator]?.sellCondition || '>'}
+                                    value={parameters[indicator].sellCondition}
                                     onChange={(e) =>
                                         handleInputChange(
                                             indicator,
@@ -129,6 +141,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                             e.target.value as '<' | '>'
                                         )
                                     }
+                                    aria-label={`${indicator} Sell Condition`}
                                 >
                                     <option value="<">Less Than</option>
                                     <option value=">">Greater Than</option>
@@ -138,14 +151,15 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                             <td>
                                 <input
                                     type="number"
-                                    value={parameters[indicator]?.sellThreshold || ''}
+                                    value={parameters[indicator].sellThreshold}
                                     onChange={(e) =>
                                         handleInputChange(
                                             indicator,
                                             'sellThreshold',
-                                            parseFloat(e.target.value)
+                                            e.target.value
                                         )
                                     }
+                                    aria-label={`${indicator} Sell Threshold`}
                                 />
                             </td>
 
@@ -153,20 +167,21 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                             <td>
                                 <input
                                     type="number"
-                                    value={parameters[indicator]?.tradeAmount || ''}
+                                    value={parameters[indicator].tradeAmount}
                                     onChange={(e) =>
                                         handleInputChange(
                                             indicator,
                                             'tradeAmount',
-                                            parseFloat(e.target.value)
+                                            e.target.value
                                         )
                                     }
+                                    aria-label={`${indicator} Trade Amount`}
                                 />
                             </td>
                             {/* Trade Amount Type Dropdown */}
                             <td>
                                 <select
-                                    value={parameters[indicator]?.tradeAmountType || 'shares'}
+                                    value={parameters[indicator].tradeAmountType}
                                     onChange={(e) =>
                                         handleInputChange(
                                             indicator,
@@ -174,6 +189,7 @@ const TradeParametersComponent: React.FC<TradeParametersComponentProps> = ({
                                             e.target.value as 'shares' | 'dollars'
                                         )
                                     }
+                                    aria-label={`${indicator} Trade Amount Type`}
                                 >
                                     <option value="shares">Shares</option>
                                     <option value="dollars">Dollars</option>
