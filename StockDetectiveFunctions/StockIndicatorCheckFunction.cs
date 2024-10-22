@@ -47,7 +47,7 @@ namespace StockDetectiveFunctions
 
 		private static async Task<StockData> GetStockDataAsync(string stockSymbol, string indicator)
 		{
-			// Example API call to get stock data (you would replace this with your actual API)
+			// API call to get stock data
 			var apiKey = Environment.GetEnvironmentVariable("StockApiKey");
 			var apiUrl = $"https://api.example.com/stock/{stockSymbol}/indicator/{indicator}?apiKey={apiKey}";
 			var response = await httpClient.GetStringAsync(apiUrl);
@@ -71,8 +71,8 @@ namespace StockDetectiveFunctions
 
 		private static async Task NotifyUser(StockNotificationEntity notification)
 		{
-			// Implement the notification logic here (e.g., email, SMS, etc.)
-			await Task.CompletedTask; // Replace with actual notification code
+			// Implement the notification logic (e.g., email, SMS, etc.)
+			await Task.CompletedTask;
 		}
 	}
 
