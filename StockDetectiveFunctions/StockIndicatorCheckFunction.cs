@@ -1,30 +1,44 @@
-using SharedModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Mail;
+using System.Threading.Tasks;
 using Azure.Data.Tables;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.WebJobs;
 using Newtonsoft.Json;
+using SharedModels;
+using StockAnalysis.Models;
+using StockAnalysis.Services;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace StockDetectiveFunctions
 {
-	public static class StockIndicatorCheckFunction
+	public class StockIndicatorCheckFunction
 	{
-		private static readonly HttpClient httpClient = new HttpClient();
+		private readonly IFmpService _fmpService;
+		private readonly TableClient _tableClient;
+		private readonly ILogger _log;
 
-		[FunctionName("StockIndicatorCheckFunction")]
-		public static async Task Run([TimerTrigger("0 0 0 * * 2-6")] TimerInfo myTimer, ILogger log)
+		public StockIndicatorCheckFunction(IFmpService fmpService, ILoggerFactory loggerFactory)
 		{
-			log.LogInformation($"Stock check function executed at: {DateTime.Now}");
+			_fmpService = fmpService;
+			_log = loggerFactory.CreateLogger<StockIndicatorCheckFunction>();
 
-			// Connect to Azure Table Storage
-			var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+			string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
 			var tableServiceClient = new TableServiceClient(connectionString);
-			var tableClient = tableServiceClient.GetTableClient("StockNotifications");
-			await tableClient.CreateIfNotExistsAsync();
+			_tableClient = tableServiceClient.GetTableClient("StockNotifications");
+			_tableClient.CreateIfNotExists();
+		}
 
-			// Retrieve all notifications
+		[Function("StockIndicatorCheckFunction")]
+		public async Task Run([TimerTrigger("0 0 0 * * 2-6")] TimerInfo myTimer)
+		{
+			_log.LogInformation($"Stock check function executed at: {DateTime.Now}");
+
 			var notifications = new List<StockNotificationEntity>();
-			var queryResults = tableClient.QueryAsync<StockNotificationEntity>();
+			var queryResults = _tableClient.QueryAsync<StockNotificationEntity>();
 
 			await foreach (var entity in queryResults)
 			{
@@ -33,35 +47,36 @@ namespace StockDetectiveFunctions
 
 			foreach (var notification in notifications)
 			{
-				// Fetch stock data from your preferred API
-				var stockData = await GetStockDataAsync(notification.StockSymbol, notification.Indicator);
+				var indicatorData = await _fmpService.GetIndicatorAsync(notification.StockSymbol, notification.Indicator);
 
-				// Check if the indicator condition is met
-				if (CheckIndicatorTriggered(notification, stockData))
+				if (indicatorData != null && indicatorData.Count > 0)
 				{
-					// Notify the user (send email, SMS, etc.)
-					await NotifyUser(notification);
+					var latestIndicator = indicatorData.FirstOrDefault();
+
+					if (CheckIndicatorTriggered(notification, latestIndicator))
+					{
+						await NotifyUser(notification);
+					}
+				}
+				else
+				{
+					_log.LogWarning($"No indicator data found for {notification.StockSymbol} and indicator {notification.Indicator}");
 				}
 			}
 		}
 
-		private static async Task<StockData> GetStockDataAsync(string stockSymbol, string indicator)
+		private bool CheckIndicatorTriggered(StockNotificationEntity notification, IndicatorData indicatorData)
 		{
-			// API call to get stock data
-			var apiKey = Environment.GetEnvironmentVariable("StockApiKey");
-			var apiUrl = $"https://api.example.com/stock/{stockSymbol}/indicator/{indicator}?apiKey={apiKey}";
-			var response = await httpClient.GetStringAsync(apiUrl);
-			return JsonConvert.DeserializeObject<StockData>(response);
-		}
+			if (indicatorData == null)
+				return false;
 
-		private static bool CheckIndicatorTriggered(StockNotificationEntity notification, StockData stockData)
-		{
-			// Implement your logic to check if the indicator threshold is met
-			if (notification.Condition == "Above" && stockData.IndicatorValue > notification.Threshold)
+			decimal indicatorValue = indicatorData.Value; // Adjust based on actual property name
+
+			if (notification.Condition.Equals("Above", StringComparison.OrdinalIgnoreCase) && indicatorValue > notification.Threshold)
 			{
 				return true;
 			}
-			if (notification.Condition == "Below" && stockData.IndicatorValue < notification.Threshold)
+			if (notification.Condition.Equals("Below", StringComparison.OrdinalIgnoreCase) && indicatorValue < notification.Threshold)
 			{
 				return true;
 			}
@@ -69,16 +84,17 @@ namespace StockDetectiveFunctions
 			return false;
 		}
 
-		private static async Task NotifyUser(StockNotificationEntity notification)
+		private async Task NotifyUser(StockNotificationEntity notification)
 		{
-			// Implement the notification logic (e.g., email, SMS, etc.)
-			await Task.CompletedTask;
+			var apiKey = Environment.GetEnvironmentVariable("SendGrid_ApiKey");
+			var client = new SendGridClient(apiKey);
+			var from = new EmailAddress("andrewpaumier@gmail.com", "Stock Detective");
+			var subject = $"Stock Alert: {notification.StockSymbol} {notification.Condition} {notification.Threshold}";
+			var to = new EmailAddress(notification.PartitionKey);
+			var plainTextContent = $"The indicator {notification.Indicator} for {notification.StockSymbol} has triggered your alert.";
+			var htmlContent = $"<strong>The indicator {notification.Indicator} for {notification.StockSymbol} has triggered your alert.</strong>";
+			var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+			var response = await client.SendEmailAsync(msg);
 		}
-	}
-
-	// StockData is an example class that you get from the stock API
-	public class StockData
-	{
-		public double IndicatorValue { get; set; }
 	}
 }

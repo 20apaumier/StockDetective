@@ -19,7 +19,7 @@ builder.Services.Configure<FmpApiSettings>(
 // Register IHttpClientFactory and IFmpService
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IFmpService, FmpService>();
-
+builder.Services.Configure<AZSettings>(builder.Configuration.GetSection("AZSettings"));
 builder.Services.AddScoped<StockNotificationService>();
 
 // Add controllers and other services
