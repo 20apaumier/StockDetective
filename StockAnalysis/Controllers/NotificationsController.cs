@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class NotificationsController : ControllerBase
 {
 	private readonly StockNotificationService _stockNotificationService;
@@ -15,8 +15,14 @@ public class NotificationsController : ControllerBase
 	[HttpPost]
 	public async Task<IActionResult> AddNotification([FromBody] NotificationRequest request)
 	{
+		if (string.IsNullOrEmpty(request.Email))
+		{
+			return BadRequest("Email is required.");
+		}
+
 		await _stockNotificationService.AddNotificationAsync(request.Email, request.StockSymbol, request.Indicator, request.Threshold, request.Condition);
-		return Ok();
+
+		return Ok(new { message = "Notification successfully created!" });
 	}
 
 	[HttpGet("{email}")]

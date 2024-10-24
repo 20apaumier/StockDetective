@@ -1,18 +1,14 @@
-// NotificationsComponent.tsx
 import React, { useState } from 'react';
 import axios from 'axios';
 
-// stock symbol for which the notification is set
 interface NotificationsProps {
     stockSymbol: string;
 }
 
-// all possible indicators (for now)
 type IndicatorType = 'Price' | 'RSI' | 'MACD' | 'SMA';
 
 interface NotificationData {
-    email: string | null;
-    phoneNumber: string | null;
+    email: string;
     indicator: IndicatorType;
     stockSymbol: string;
     threshold: number;
@@ -20,9 +16,7 @@ interface NotificationData {
 }
 
 const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) => {
-    // states for the form fields
     const [email, setEmail] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState('');
     const [indicator, setIndicator] = useState<IndicatorType>('Price');
     const [threshold, setThreshold] = useState<number | ''>('');
     const [condition, setCondition] = useState<'Above' | 'Below'>('Above');
@@ -30,22 +24,19 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
         null
     );
 
-    // Helper function to reset form fields after successful submission
     const resetForm = () => {
         setEmail('');
-        setPhoneNumber('');
         setIndicator('Price');
         setThreshold('');
         setCondition('Above');
     };
 
-    // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation for email or phone number
-        if (!email && !phoneNumber) {
-            setMessage({ type: 'error', text: 'Please provide either an email or phone number.' });
+        // Validation for email
+        if (!email) {
+            setMessage({ type: 'error', text: 'Please provide an email address.' });
             return;
         }
 
@@ -56,19 +47,17 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
         }
 
         const notificationData: NotificationData = {
-            email: email || null,
-            phoneNumber: phoneNumber || null,
+            email,
             indicator,
             stockSymbol,
-            threshold: Number(threshold), // Ensure threshold is a number
+            threshold: Number(threshold),
             condition,
         };
 
-        // API call to create notification
         try {
             await axios.post('http://localhost:7086/notifications', notificationData);
             setMessage({ type: 'success', text: 'Notification successfully created!' });
-            resetForm(); // Reset the form after successful submission
+            resetForm();
         } catch (error) {
             console.error('Error creating notification:', error);
             setMessage({ type: 'error', text: 'Failed to create notification. Please try again.' });
@@ -87,20 +76,9 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        required
                     />
                 </label>
-
-                {/* Phone Number Input */}
-                <label htmlFor="phoneNumber">
-                    Phone Number:
-                    <input
-                        id="phoneNumber"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                    />
-                </label>
-                <p>Please enter at least an email address or phone number.</p>
 
                 {/* Indicator Selection */}
                 <label htmlFor="indicator">

@@ -10,12 +10,16 @@ using StockAnalysis.Models;
 public class StockNotificationService
 {
 	private readonly TableClient _tableClient;
-	private readonly AZSettings _azsettings;
 
 	public StockNotificationService(IOptions<AZSettings> options)
 	{
-		_azsettings = options.Value;
-		string connectionString = _azsettings.ConnectionString;
+		string connectionString = options.Value.ConnectionString;
+
+		if (string.IsNullOrEmpty(connectionString))
+		{
+			throw new InvalidOperationException("Azure Storage connection string is not set.");
+		}
+
 		var tableServiceClient = new TableServiceClient(connectionString);
 		_tableClient = tableServiceClient.GetTableClient("StockNotifications");
 		_tableClient.CreateIfNotExists();
@@ -28,7 +32,8 @@ public class StockNotificationService
 			StockSymbol = stockSymbol,
 			Indicator = indicator,
 			Threshold = threshold,
-			Condition = condition
+			Condition = condition,
+			Email = email
 		};
 
 		await _tableClient.AddEntityAsync(notification);
