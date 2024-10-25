@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockDetective", "StockAnalysis\StockDetective.csproj", "{0C538D4A-0F68-4F92-8D96-8E05098DB59F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockDetective", "StockDetective\StockDetective.csproj", "{0C538D4A-0F68-4F92-8D96-8E05098DB59F}"
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "frontend", "frontend\frontend.esproj", "{2FEE0FB5-5987-4996-81DE-D52C632BACE5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockDetective.Tests", "StockAnalysis.Tests\StockDetective.Tests.csproj", "{10893FF7-D69F-429A-A45E-C415AA752785}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockDetective.Tests", "StockDetective.Tests\StockDetective.Tests.csproj", "{10893FF7-D69F-429A-A45E-C415AA752785}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockDetectiveFunctions", "StockDetectiveFunctions\StockDetectiveFunctions.csproj", "{B662C0A5-6103-4454-BDAC-203AF9C2559F}"
 EndProject
