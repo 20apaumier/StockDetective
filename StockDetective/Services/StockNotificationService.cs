@@ -1,9 +1,5 @@
 ﻿using SharedModels;
 using Azure.Data.Tables;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using StockAnalysis.Models;
 

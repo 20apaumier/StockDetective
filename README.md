@@ -1,31 +1,30 @@
-# Stock Analysis - A Stock Monitoring & Notification System
+# Overview
+The **Stock Detective** project is designed to provide an interactive platform for analyzing stock market data. 
+Users can view historical stock prices, apply technical indicators like MACD, RSI, and SMA, 
+simulate trading strategies, and set up notifications for specific stock conditions.
 
-This project allows users to monitor stock data and receive notifications when certain indicators are triggered. It includes a frontend React app, a backend ASP.NET Web API, and Azure Functions for stock data processing and notifications.
-
-## Project Structure
-- **frontend/**: React app that visualizes stock data and allows users to configure notifications.
-- **StockAnalysis/**: ASP.NET Web API that provides stock data endpoints and manages user notifications.
-- **StockDetectiveFunctions/**: Azure Functions that check stock indicators periodically and notify users.
-- **SharedModels/**: Shared model library used by both the backend and the Azure Functions.
-- **tests/**: Unit and integration tests for backend and functions.
+## Features
+- Stock Chart Visualization: Display interactive candlestick charts for selected stock symbols.
+- Time Frame Selection: Choose from various time frames to view historical data.
+- Technical Indicators: Toggle technical indicators like MACD, RSI, and SMA on the charts.
+- Trade Simulation: Input trade parameters to simulate trading strategies and view potential profits.
+- Notifications: Set up notifications based on specific conditions and indicators.
+- RESTful API: Backend APIs for fetching stock data and managing notifications.
+- Integration with External Services:
+    - Financial Modeling Prep (FMP) API: Retrieve stock market data.
+    - Azure Table Storage: Store and manage user notifications.
 
 ## Technologies Used
-- **React** for the frontend UI
-- **ASP.NET Core Web API** for the backend
-- **Azure Functions** for background processing
-- **Azure Table Storage** for storing user data and notifications
-- **Docker** and **Docker Compose** for containerization
 
-## Running Locally with Docker
-1. Install Docker.
-2. Clone the repository: `git clone https://github.com/YourUsername/StockAnalysis.git`
-3. Navigate to the project directory: `cd StockAnalysis`
-4. Run the application: `docker-compose up --build`
-5. Access the frontend at `http://localhost:5173` and the backend at `http://localhost:7086`.
+### Frontend
+- React: JavaScript library for building user interfaces.
+- TypeScript: Typed superset of JavaScript that adds static typing.
+- Vite: Frontend build tool for faster development.
+- Axios: Promise-based HTTP client for making API requests.
+- Jest: JavaScript testing framework to ensure correctness of code.
 
-## API Endpoints
-### `/Stock/{symbol}`
-Returns stock data for the given symbol.
-
-### `/Notifications`
-Manage notification subscriptions for stock indicators.
+### Backend
+- ASP.NET Core: Open-source framework for building web applications and APIs.
+- C#: Programming language used for backend development.
+- Azure Table Storage: NoSQL data storage for storing notifications.
+- Azure Functions: Timer-driven trigger for handling notifications.

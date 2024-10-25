@@ -1,9 +1,5 @@
 using StockAnalysis.Models;
 using StockAnalysis.Services;
-using MongoDB.Driver;
-using MongoDB.Bson;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,14 +54,8 @@ app.UseCors("AllowFrontendApp");
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Remove or conditionally apply HTTPS redirection
-// app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Map Health Check Endpoint
-//app.MapHealthChecks("/health");
 
 app.Run();
