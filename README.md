@@ -1,5 +1,5 @@
 # Overview
-The Stock Detective project is designed to provide an interactive platform for analyzing stock market data. 
+The **Stock Detective** project is designed to provide an interactive platform for analyzing stock market data. 
 Users can view historical stock prices, apply technical indicators like MACD, RSI, and SMA, 
 simulate trading strategies, and set up notifications for specific stock conditions.
 
