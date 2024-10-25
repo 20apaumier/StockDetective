@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using StockAnalysis.Models;
-using StockAnalysis.Models;
+﻿using StockAnalysis.Models;
 
 namespace StockAnalysis.Services
 {
