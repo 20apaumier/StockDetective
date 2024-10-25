@@ -70,7 +70,7 @@ namespace StockDetectiveFunctions
 			if (indicatorData == null)
 				return false;
 
-			decimal indicatorValue = indicatorData.Value; // Adjust based on actual property name
+			double indicatorValue = indicatorData.Value;
 
 			if (notification.Condition.Equals("Above", StringComparison.OrdinalIgnoreCase) && indicatorValue > notification.Threshold)
 			{
