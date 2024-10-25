@@ -38,10 +38,7 @@ interface StockDataItem {
 }
 
 const ChartComponent: React.FC<ChartComponentProps> = ({
-    chartId,
     stockSymbol,
-    addChart,
-    removeChart,
 }) => {
     // state to store raw stock data fetched from the api
     const [rawData, setRawData] = useState<StockDataItem[]>([]);
@@ -125,12 +122,17 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                     setRawData(sortedData);
                     console.log('Raw Data:', sortedData);
 
-                    // Prepare indicator data (MACD, RSI, SMA)
+                    // Type guard function
+                    const isLineData = (item: { time: string; value: number | null }): item is LineData => {
+                        return item.value !== null;
+                    };
+
+                    // Modified prepareIndicatorData function
                     const prepareIndicatorData = (
                         dataKey: keyof StockDataItem,
                         setter: React.Dispatch<React.SetStateAction<LineData[]>>
                     ) => {
-                        const indicatorData: LineData[] = sortedData
+                        const indicatorData = sortedData
                             .map((item) => ({
                                 time: format(parseISO(item.date), 'yyyy-MM-dd'),
                                 value:
@@ -140,8 +142,9 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                                         ? Number(item[dataKey])
                                         : null,
                             }))
-                            .filter((item) => item.value !== null);
-                        setter(indicatorData as LineData[]);
+                            .filter(isLineData);
+
+                        setter(indicatorData);
                         console.log(`${dataKey} Data:`, indicatorData);
                     };
 
