@@ -26,29 +26,29 @@ builder.Services.AddSwaggerGen();
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
-        policy =>
-        {
-            policy.SetIsOriginAllowed(origin =>
-		{
-                // Allow any origin that is localhost
-                return new Uri(origin).Host == "localhost";
-            })
-				   .AllowAnyMethod()
-				   .AllowAnyHeader();
-			options.AddPolicy("AllowFrontendApp", policy =>
-			{
-				policy.WithOrigins("http://localhost:5173")
-					  .AllowAnyHeader()
-					  .AllowAnyMethod();
-			});
+  //  options.AddPolicy("AllowReactApp",
+  //      policy =>
+  //      {
+  //          policy.SetIsOriginAllowed(origin =>
+		//{
+  //              // Allow any origin that is localhost
+  //              return new Uri(origin).Host == "localhost";
+  //          })
+		//		   .AllowAnyMethod()
+		//		   .AllowAnyHeader();
+			options.AddPolicy("AllowLocalhost",
+				policy =>
+				{
+					policy.WithOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:5174") // Adjust ports as needed
+						  .AllowAnyMethod()
+						  .AllowAnyHeader();
+				});
 		});
-});
 
 var app = builder.Build();
 
-app.UseCors("AllowReactApp");
-app.UseCors("AllowFrontendApp");
+//app.UseCors("AllowReactApp");
+app.UseCors("AllowLocalhost");
 
 // Configure middleware
 app.UseSwagger();

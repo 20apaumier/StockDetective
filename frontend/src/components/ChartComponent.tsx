@@ -109,7 +109,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
                 try {
                     // fetch stock data from backend api
                     const response = await axios.get(
-                        `http://localhost:7086/Stock/${stockSymbol}`,
+                        `https://localhost:7086/Stock/${stockSymbol}`,
                         { params }
                     );
                     console.log('API Response Data:', response.data);

@@ -55,7 +55,7 @@ const NotificationsComponent: React.FC<NotificationsProps> = ({ stockSymbol }) =
         };
 
         try {
-            await axios.post('http://localhost:7086/notifications', notificationData);
+            await axios.post('https://localhost:7086/notifications', notificationData);
             setMessage({ type: 'success', text: 'Notification successfully created!' });
             resetForm();
         } catch (error) {
